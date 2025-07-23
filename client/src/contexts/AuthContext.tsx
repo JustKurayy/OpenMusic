@@ -20,14 +20,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/auth/me"],
     enabled: !!token,
     retry: false,
+    staleTime: 0, // Always refetch when invalidated
   });
 
   const login = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
     
-    // Invalidate and refetch user data immediately
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    // Force a refetch after token is set
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+    }, 100);
   };
 
   const logout = async () => {
@@ -55,24 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // For guest users, create a mock user object when we have a token but no user data
+  // Use the user data from the backend or null
   let currentUser = user || null;
-  if (token && !user && !isLoading) {
-    // If we have a token but no user data (guest case), try to decode the token
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.guest) {
-        currentUser = {
-          id: 0,
-          email: "guest@musicstream.com",
-          name: "Guest User",
-          isGuest: true
-        } as any;
-      }
-    } catch (e) {
-      // Invalid token, ignore
-    }
-  }
 
   return (
     <AuthContext.Provider

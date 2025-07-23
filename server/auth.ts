@@ -9,59 +9,64 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
 
-// Configure Google OAuth strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback",
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const googleId = profile.id;
-        const email = profile.emails?.[0]?.value;
-        const name = profile.displayName;
-        const avatar = profile.photos?.[0]?.value;
+// Check if Google OAuth is configured
+export const isGoogleOAuthConfigured = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET;
 
-        if (!email) {
-          return done(new Error("No email found in Google profile"), null);
-        }
+// Configure Google OAuth strategy only if credentials are available
+if (isGoogleOAuthConfigured) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: "/api/auth/google/callback",
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const googleId = profile.id;
+          const email = profile.emails?.[0]?.value;
+          const name = profile.displayName;
+          const avatar = profile.photos?.[0]?.value;
 
-        // Check if user exists
-        let user = await storage.getUserByGoogleId(googleId);
-        
-        if (!user) {
-          // Check if user exists with this email
-          user = await storage.getUserByEmail(email);
-          
-          if (user) {
-            // Update existing user with Google ID
-            // This would require an update method in storage, for now create new
-            user = await storage.createUser({
-              googleId,
-              email,
-              name,
-              avatar,
-            });
-          } else {
-            // Create new user
-            user = await storage.createUser({
-              googleId,
-              email,
-              name,
-              avatar,
-            });
+          if (!email) {
+            return done(new Error("No email found in Google profile"), null);
           }
-        }
 
-        return done(null, user);
-      } catch (error) {
-        return done(error, null);
+          // Check if user exists
+          let user = await storage.getUserByGoogleId(googleId);
+          
+          if (!user) {
+            // Check if user exists with this email
+            user = await storage.getUserByEmail(email);
+            
+            if (user) {
+              // Update existing user with Google ID
+              // This would require an update method in storage, for now create new
+              user = await storage.createUser({
+                googleId,
+                email,
+                name,
+                avatar,
+              });
+            } else {
+              // Create new user
+              user = await storage.createUser({
+                googleId,
+                email,
+                name,
+                avatar,
+              });
+            }
+          }
+
+          return done(null, user);
+        } catch (error) {
+          return done(error, null);
+        }
       }
-    }
-  )
-);
+    )
+  );
+}
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -70,19 +75,31 @@ passport.serializeUser((user: any, done) => {
 passport.deserializeUser(async (id: number, done) => {
   try {
     const user = await storage.getUser(id);
-    done(null, user);
+    done(null, user || false);
   } catch (error) {
-    done(error, null);
+    done(error, false);
   }
 });
 
+// Create guest user for demo purposes
+export function createGuestUser(): any {
+  return {
+    id: 0,
+    email: "guest@musicstream.app",
+    name: "Guest User",
+    avatar: null,
+    isGuest: true,
+  };
+}
+
 // JWT token functions
-export function generateToken(user: User): string {
+export function generateToken(user: User | any): string {
   return jwt.sign(
     { 
       id: user.id, 
       email: user.email, 
-      name: user.name 
+      name: user.name,
+      isGuest: user.isGuest || false,
     },
     JWT_SECRET,
     { expiresIn: "7d" }
@@ -111,7 +128,26 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 
-  req.user = decoded;
+  (req as any).user = decoded;
+  next();
+}
+
+// Authentication middleware that allows guest users
+export function authenticateTokenOrGuest(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ message: "Access token required" });
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+
+  (req as any).user = decoded;
+  
   next();
 }
 
@@ -123,7 +159,7 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
   if (token) {
     const decoded = verifyToken(token);
     if (decoded) {
-      req.user = decoded;
+      (req as any).user = decoded;
     }
   }
 

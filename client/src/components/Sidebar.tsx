@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Search, Library, Upload, Plus, Music } from "lucide-react";
+import { Home, Search, Library, Upload, Plus, Music, Users, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { playlistsApi, type ApiPlaylist } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 export default function Sidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  
+  const isGuest = user && (user as any).isGuest;
 
   const { data: playlists = [] } = useQuery<ApiPlaylist[]>({
     queryKey: ["/api/playlists"],
@@ -96,16 +98,34 @@ export default function Sidebar() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-spotify-white">{user.name}</p>
-              <p className="text-xs text-spotify-text truncate">{user.email}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium truncate text-spotify-white">{user.name}</p>
+                {isGuest && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-spotify-green text-black font-medium">
+                    <Users className="w-3 h-3 mr-1" />
+                    Guest
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-spotify-text truncate">{isGuest ? "Guest User" : user.email}</p>
             </div>
-            <button 
-              onClick={logout}
-              className="text-spotify-text hover:text-spotify-white transition-colors duration-200"
-              title="Logout"
-            >
-              <i className="fas fa-sign-out-alt" />
-            </button>
+            {isGuest ? (
+              <button 
+                onClick={() => window.location.href = "/api/auth/google"}
+                className="text-spotify-green hover:text-spotify-green-hover transition-colors duration-200"
+                title="Sign in with Google"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            ) : (
+              <button 
+                onClick={logout}
+                className="text-spotify-text hover:text-spotify-white transition-colors duration-200"
+                title="Logout"
+              >
+                <i className="fas fa-sign-out-alt" />
+              </button>
+            )}
           </div>
         </div>
       )}

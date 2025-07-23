@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CloudUpload, X, Music } from "lucide-react";
+import { CloudUpload, X, Music, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { tracksApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UploadFile {
   file: File;
@@ -21,6 +22,9 @@ export default function Upload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const isGuest = user && (user as any).isGuest;
 
   const uploadMutation = useMutation({
     mutationFn: async (uploadFile: UploadFile) => {
@@ -133,6 +137,50 @@ export default function Upload() {
       setUploadFiles([]);
     }
   };
+
+  if (isGuest) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-spotify-white">Upload Your Music</h1>
+        
+        {/* Guest Mode Notice */}
+        <Card className="mb-8 bg-spotify-light-gray border-spotify-light-gray">
+          <CardContent className="p-8 text-center">
+            <Users className="mx-auto mb-4 w-16 h-16 text-spotify-text" />
+            <h3 className="text-xl font-semibold mb-4 text-spotify-white">
+              Upload Not Available in Guest Mode
+            </h3>
+            <p className="text-spotify-text mb-6 max-w-md mx-auto">
+              To upload and manage your own music, you'll need to sign in with Google. 
+              Guest mode lets you explore the app with existing tracks.
+            </p>
+            <Button
+              onClick={() => window.location.href = "/api/auth/google"}
+              className="bg-spotify-green hover:bg-spotify-green-hover text-black font-semibold"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Sign in with Google
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Demo Information */}
+        <Card className="bg-spotify-light-gray border-spotify-light-gray">
+          <CardHeader>
+            <CardTitle className="text-spotify-white">What you can do in Guest Mode</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-spotify-text">
+              <li>• Browse and play existing tracks</li>
+              <li>• Explore the music library</li>
+              <li>• Use the audio player controls</li>
+              <li>• Experience the Spotify-inspired interface</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-6">

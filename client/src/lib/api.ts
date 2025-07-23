@@ -51,6 +51,8 @@ export interface ApiUser {
 export const authApi = {
   getMe: () => apiRequest("GET", "/api/auth/me"),
   logout: () => apiRequest("POST", "/api/auth/logout"),
+  getStatus: () => apiRequest("GET", "/api/auth/status"),
+  guestLogin: () => apiRequest("POST", "/api/auth/guest"),
 };
 
 // Tracks API

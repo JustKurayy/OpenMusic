@@ -35,10 +35,12 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Authentication System
-- **OAuth2 Flow**: Google OAuth2 for user authentication
+- **OAuth2 Flow**: Google OAuth2 for user authentication (optional)
+- **Guest Mode**: Anonymous access when OAuth credentials not configured
 - **JWT Tokens**: Secure token-based authentication for API requests
 - **Session Management**: Express sessions with persistent storage
 - **User Management**: User profiles with Google ID linking
+- **Flexible Authentication**: Supports both authenticated and guest users
 
 ### Audio Management
 - **File Upload**: Supports MP3 and WAV formats with metadata extraction

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import express from "express";
 import session from "express-session";
 import { storage } from "./storage";
-import { passport, authenticateToken, optionalAuth, generateToken } from "./auth";
+import { passport, authenticateToken, authenticateTokenOrGuest, optionalAuth, generateToken, isGoogleOAuthConfigured, createGuestUser } from "./auth";
 import { upload, extractMetadata, streamAudio } from "./upload";
 import { insertTrackSchema, insertPlaylistSchema, insertPlaylistTrackSchema } from "@shared/schema";
 import path from "path";
@@ -25,21 +25,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Auth routes
-  app.get("/api/auth/google", 
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
+  // Auth status endpoint
+  app.get("/api/auth/status", (req, res) => {
+    res.json({
+      googleOAuthConfigured: isGoogleOAuthConfigured,
+      guestModeAvailable: !isGoogleOAuthConfigured,
+    });
+  });
 
-  app.get("/api/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/login" }),
-    (req, res) => {
-      const user = req.user as any;
-      const token = generateToken(user);
-      
-      // Redirect to frontend with token
-      res.redirect(`/?token=${token}`);
+  // Guest login endpoint
+  app.post("/api/auth/guest", (req, res) => {
+    if (isGoogleOAuthConfigured) {
+      return res.status(403).json({ message: "Guest mode not available when OAuth is configured" });
     }
-  );
+    
+    const guestUser = createGuestUser();
+    const token = generateToken(guestUser);
+    res.json({ token, user: guestUser });
+  });
+
+  // Auth routes (only if Google OAuth is configured)
+  if (isGoogleOAuthConfigured) {
+    app.get("/api/auth/google", 
+      passport.authenticate("google", { scope: ["profile", "email"] })
+    );
+
+    app.get("/api/auth/google/callback",
+      passport.authenticate("google", { failureRedirect: "/login" }),
+      (req, res) => {
+        const user = req.user as any;
+        const token = generateToken(user);
+        
+        // Redirect to frontend with token
+        res.redirect(`/?token=${token}`);
+      }
+    );
+  }
 
   app.post("/api/auth/logout", (req, res) => {
     req.logout((err) => {
@@ -50,8 +71,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  app.get("/api/auth/me", authenticateTokenOrGuest, async (req, res) => {
     try {
+      // Handle guest users
+      if (req.user.isGuest) {
+        return res.json(req.user);
+      }
+      
       const user = await storage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -96,8 +122,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tracks/upload", authenticateToken, upload.single("audio"), async (req, res) => {
+  app.post("/api/tracks/upload", authenticateTokenOrGuest, upload.single("audio"), async (req, res) => {
     try {
+      // Restrict guest users from uploading
+      if ((req as any).user.isGuest) {
+        return res.status(403).json({ 
+          message: "Guest users cannot upload tracks. Please log in with Google to upload music." 
+        });
+      }
+
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
@@ -113,11 +146,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filePath: req.file.path,
         mimeType: req.file.mimetype,
         fileSize: req.file.size,
-        userId: req.user.id,
+        userId: (req as any).user.id,
       };
 
       const validatedData = insertTrackSchema.parse(trackData);
-      const track = await storage.createTrack({ ...validatedData, userId: req.user.id });
+      const track = await storage.createTrack({ ...validatedData, userId: (req as any).user.id });
       
       res.status(201).json(track);
     } catch (error: any) {
@@ -142,11 +175,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Track not found" });
       }
       
-      if (track.userId !== req.user.id) {
+      if (track.userId !== (req as any).user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      const deleted = await storage.deleteTrack(trackId, req.user.id);
+      const deleted = await storage.deleteTrack(trackId, (req as any).user.id);
       if (!deleted) {
         return res.status(404).json({ message: "Track not found" });
       }
@@ -178,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Playlist routes
   app.get("/api/playlists", authenticateToken, async (req, res) => {
     try {
-      const playlists = await storage.getPlaylistsByUser(req.user.id);
+      const playlists = await storage.getPlaylistsByUser((req as any).user.id);
       res.json(playlists);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
@@ -192,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Playlist not found" });
       }
       
-      if (playlist.userId !== req.user.id) {
+      if (playlist.userId !== (req as any).user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -205,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/playlists", authenticateToken, async (req, res) => {
     try {
       const validatedData = insertPlaylistSchema.parse(req.body);
-      const playlist = await storage.createPlaylist({ ...validatedData, userId: req.user.id });
+      const playlist = await storage.createPlaylist({ ...validatedData, userId: (req as any).user.id });
       res.status(201).json(playlist);
     } catch (error: any) {
       res.status(400).json({ 
@@ -220,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const playlistId = parseInt(req.params.id);
       const validatedData = insertPlaylistSchema.partial().parse(req.body);
       
-      const playlist = await storage.updatePlaylist(playlistId, validatedData, req.user.id);
+      const playlist = await storage.updatePlaylist(playlistId, validatedData, (req as any).user.id);
       if (!playlist) {
         return res.status(404).json({ message: "Playlist not found" });
       }
@@ -236,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/playlists/:id", authenticateToken, async (req, res) => {
     try {
-      const deleted = await storage.deletePlaylist(parseInt(req.params.id), req.user.id);
+      const deleted = await storage.deletePlaylist(parseInt(req.params.id), (req as any).user.id);
       if (!deleted) {
         return res.status(404).json({ message: "Playlist not found" });
       }
@@ -253,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify playlist ownership
       const playlist = await storage.getPlaylist(playlistId);
-      if (!playlist || playlist.userId !== req.user.id) {
+      if (!playlist || playlist.userId !== (req as any).user.id) {
         return res.status(404).json({ message: "Playlist not found" });
       }
       
@@ -278,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const playlistId = parseInt(req.params.playlistId);
       const trackId = parseInt(req.params.trackId);
       
-      const removed = await storage.removeTrackFromPlaylist(playlistId, trackId, req.user.id);
+      const removed = await storage.removeTrackFromPlaylist(playlistId, trackId, (req as any).user.id);
       if (!removed) {
         return res.status(404).json({ message: "Track not found in playlist" });
       }
@@ -298,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "trackIds must be an array" });
       }
       
-      const success = await storage.reorderPlaylistTracks(playlistId, trackIds, req.user.id);
+      const success = await storage.reorderPlaylistTracks(playlistId, trackIds, (req as any).user.id);
       if (!success) {
         return res.status(404).json({ message: "Playlist not found" });
       }

@@ -26,13 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", newToken);
     setToken(newToken);
     
-    // Set authorization header for future requests
-    queryClient.setDefaultOptions({
-      queries: {
-        ...queryClient.getDefaultOptions().queries,
-        retry: false,
-      },
-    });
+    // Invalidate and refetch user data immediately
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
   };
 
   const logout = async () => {
@@ -60,10 +55,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // For guest users, create a mock user object when we have a token but no user data
+  let currentUser = user || null;
+  if (token && !user && !isLoading) {
+    // If we have a token but no user data (guest case), try to decode the token
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.guest) {
+        currentUser = {
+          id: 0,
+          email: "guest@musicstream.com",
+          name: "Guest User",
+          isGuest: true
+        } as any;
+      }
+    } catch (e) {
+      // Invalid token, ignore
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user: currentUser,
         token,
         login,
         logout,

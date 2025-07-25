@@ -17,8 +17,8 @@ export default function Login() {
 
   const guestLoginMutation = useMutation({
     mutationFn: authApi.guestLogin,
-    onSuccess: (data: any) => {
-      login(data.token);
+    onSuccess: async (data: any) => {
+      await login(data.token);
     },
   });
 

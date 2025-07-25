@@ -16,22 +16,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, refetch } = useQuery({
     queryKey: ["/api/auth/me"],
     enabled: !!token,
     retry: false,
     staleTime: 0, // Always refetch when invalidated
+    gcTime: 0, // Don't cache
   });
 
-  const login = (newToken: string) => {
+  const login = async (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
     
-    // Force a refetch after token is set
-    setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-    }, 100);
+    // Force immediate refetch with new token
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Failed to fetch user data after login:", error);
+    }
   };
 
   const logout = async () => {
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Check for token in URL (from OAuth callback)
+  // Check for token in URL (from OAuth callback) and clean up invalid tokens
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get("token");
@@ -59,8 +61,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Clear invalid tokens on first load
+  useEffect(() => {
+    if (token && user === undefined && !isLoading) {
+      // If we have a token but couldn't get user data, the token is invalid
+      console.log("Clearing invalid token");
+      localStorage.removeItem("token");
+      setToken(null);
+    }
+  }, [token, user, isLoading]);
+
   // Use the user data from the backend or null
-  let currentUser = user || null;
+  let currentUser: ApiUser | null = null;
+  if (user && typeof user === 'object' && 'id' in user && 'email' in user && 'name' in user) {
+    currentUser = user as ApiUser;
+  }
 
   return (
     <AuthContext.Provider

@@ -61,15 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Clear invalid tokens on first load
-  useEffect(() => {
-    if (token && user === undefined && !isLoading) {
-      // If we have a token but couldn't get user data, the token is invalid
-      console.log("Clearing invalid token");
-      localStorage.removeItem("token");
-      setToken(null);
-    }
-  }, [token, user, isLoading]);
+  // Only clear token if we get a 401/403 error, not based on undefined user data
+  // The query will handle invalid tokens through error states
 
   // Use the user data from the backend or null
   let currentUser: ApiUser | null = null;

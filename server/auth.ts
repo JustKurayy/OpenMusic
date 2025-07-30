@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import type { Request, Response, NextFunction } from "express";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
+const JWT_SECRET = process.env.JWT_SECRET || "a8d73bb6186c3577042e243fbf923959cbc407dd88de99e580dae2a8fa00746e";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
 
@@ -136,6 +136,8 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 export function authenticateTokenOrGuest(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  console.log("request:",req);
+  console.log("Token:", token);
 
   if (!token) {
     return res.status(401).json({ message: "Access token required" });

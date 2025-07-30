@@ -20,8 +20,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/auth/me"],
     enabled: !!token,
     retry: false,
-    staleTime: 0, // Always refetch when invalidated
-    gcTime: 0, // Don't cache
+    staleTime: 0,
+    gcTime: 0,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
   });
 
   const login = async (newToken: string) => {

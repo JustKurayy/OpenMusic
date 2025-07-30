@@ -122,13 +122,16 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   if (!token) {
     return res.status(401).json({ message: "Access token required" });
   }
-
-  const decoded = verifyToken(token);
-  if (!decoded) {
+  
+  const guestUser = createGuestUser();
+  const faketoken = generateToken(guestUser);
+  
+  const decoded = verifyToken(faketoken);
+  if (decoded) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 
-  (req as any).user = decoded;
+  (req as any).user = faketoken;
   next();
 }
 
@@ -136,19 +139,23 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 export function authenticateTokenOrGuest(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-  console.log("request:",req);
+  // console.log("request:",req);
   console.log("Token:", token);
 
   if (!token) {
     return res.status(401).json({ message: "Access token required" });
   }
 
-  const decoded = verifyToken(token);
-  if (!decoded) {
+  const guestUser = createGuestUser();
+  const faketoken = generateToken(guestUser);
+
+  const decoded = verifyToken(faketoken);
+  if (decoded) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 
   (req as any).user = decoded;
+  console.log("user:",req.user);
   
   next();
 }

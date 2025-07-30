@@ -14,49 +14,49 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading, refetch } = useQuery({
-    queryKey: ["/api/auth/me"],
-    enabled: !!token,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
-    queryFn: async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return null;
-      
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
+  // Fetch user data when token changes
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      return;
+    }
+
+    const fetchUser = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          setUser(null);
+          localStorage.removeItem("token");
+          setToken(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      
-      return response.json();
-    },
-  });
+    };
+
+    fetchUser();
+  }, [token]);
 
   const login = async (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    
-    // Force immediate refetch with new token and wait for result
-    try {
-      const result = await refetch();
-      if (!result.data) {
-        throw new Error("Failed to fetch user data");
-      }
-    } catch (error) {
-      console.error("Failed to fetch user data after login:", error);
-      // Clear invalid token
-      localStorage.removeItem("token");
-      setToken(null);
-      throw error;
-    }
+    // User data will be fetched automatically by the useEffect above
   };
 
   const logout = async () => {
@@ -84,23 +84,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Only clear token if we get a 401/403 error, not based on undefined user data
-  // The query will handle invalid tokens through error states
 
-  // Use the user data from the backend or null
-  let currentUser: ApiUser | null = null;
-  if (user && typeof user === 'object' && 'id' in user && 'email' in user && 'name' in user) {
-    currentUser = user as ApiUser;
-  }
 
   return (
     <AuthContext.Provider
       value={{
-        user: currentUser,
+        user,
         token,
         login,
         logout,
-        isLoading: isLoading && !!token,
+        isLoading,
       }}
     >
       {children}

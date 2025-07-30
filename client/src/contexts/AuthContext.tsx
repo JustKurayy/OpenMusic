@@ -5,7 +5,7 @@ import { authApi, type ApiUser } from "@/lib/api";
 interface AuthContextType {
   user: ApiUser | null;
   token: string | null;
-  login: (token: string) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -28,11 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", newToken);
     setToken(newToken);
     
-    // Force immediate refetch with new token
+    // Force immediate refetch with new token and wait for result
     try {
-      await refetch();
+      const result = await refetch();
+      if (!result.data) {
+        throw new Error("Failed to fetch user data");
+      }
     } catch (error) {
       console.error("Failed to fetch user data after login:", error);
+      // Clear invalid token
+      localStorage.removeItem("token");
+      setToken(null);
+      throw error;
     }
   };
 

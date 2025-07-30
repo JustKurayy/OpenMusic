@@ -71,22 +71,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/auth/me", authenticateTokenOrGuest, async (req, res) => {
-    try {
-      // Handle guest users
-      if ((req as any).user.isGuest) {
-        return res.json((req as any).user);
-      }
+  app.get("/api/auth/me", authenticateTokenOrGuest);
+
+  // app.get("/api/auth/me", authenticateTokenOrGuest, async (req, res) => {
+  //   try {
+  //     // Handle guest users
+  //     if ((req as any).user.isGuest) {
+  //       return res.json((req as any).user);
+  //     }
       
-      const user = await storage.getUser((req as any).user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
+  //     const user = await storage.getUser((req as any).user.id);
+  //     if (!user) {
+  //       return res.status(404).json({ message: "User not found" });
+  //     }
+  //     res.json(user);
+  //   } catch (error) {
+  //     res.status(500).json({ message: "Server error" });
+  //   }
+  // });
 
   // Track routes
   app.get("/api/tracks", optionalAuth, async (req, res) => {

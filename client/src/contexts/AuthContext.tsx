@@ -36,7 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          console.log("Fetched user data:", userData);
+          if (userData && userData.id !== undefined) {
+            setUser(userData);
+          } else {
+            console.error("Invalid user data received:", userData);
+            setUser(null);
+          }
         } else {
           setUser(null);
           localStorage.removeItem("token");

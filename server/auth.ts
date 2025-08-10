@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import type { Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 
 // const JWT_SECRET = process.env.JWT_SECRET || "a8d73bb6186c3577042e243fbf923959cbc407dd88de99e580dae2a8fa00746e";
 const JWT_SECRET = "fallback_jwt_secret";
@@ -11,10 +12,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUT
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
 
 // Check if Google OAuth is configured
-export const isGoogleOAuthConfigured = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET;
+export const isGoogleOAuthConfigured = Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
 
 // Configure Google OAuth strategy only if credentials are available
-if (isGoogleOAuthConfigured) {
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   passport.use(
     new GoogleStrategy(
       {
@@ -30,7 +31,7 @@ if (isGoogleOAuthConfigured) {
           const avatar = profile.photos?.[0]?.value;
 
           if (!email) {
-            return done(new Error("No email found in Google profile"), null);
+            return done(new Error("No email found in Google profile"));
           }
 
           // Check if user exists
@@ -62,7 +63,7 @@ if (isGoogleOAuthConfigured) {
 
           return done(null, user);
         } catch (error) {
-          return done(error, null);
+          return done(error);
         }
       }
     )
@@ -115,64 +116,27 @@ export function verifyToken(token: string): any {
   }
 }
 
-// Authentication middleware
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+// Combined authentication middleware: allows guest or authenticated users
+export function authenticateUserOrGuest(req: Request, res: Response, next: NextFunction) {
+  let token: string | undefined;
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
   if (!token) {
-    return res.status(401).json({ message: "Access token required" });
+    // Not logged in, treat as guest
+    req.user = undefined;
+    return next();
   }
-  
-  const guestUser = createGuestUser();
-  const faketoken = generateToken(guestUser);
-  
-  const decoded = verifyToken(faketoken);
-  if (decoded) {
-    return res.status(403).json({ message: "Invalid or expired token" });
-  }
-
-  (req as any).user = faketoken;
-  next();
-}
-
-// Authentication middleware that allows guest users
-export function authenticateTokenOrGuest(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-  // console.log("request:",req);
-  console.log("Token:", token);
-
-  if (!token) {
-    return res.status(401).json({ message: "Access token required" });
-  }
-
-  const guestUser = createGuestUser();
-  const faketoken = generateToken(guestUser);
-
-  const decoded = verifyToken(faketoken);
+  const decoded = verifyToken(token);
   if (!decoded) {
-    return res.status(403).json({ message: "Invalid or expired token" });
+    // Invalid token, treat as guest
+    req.user = undefined;
+    return next();
   }
-
   (req as any).user = decoded;
-  console.log("user:",req.user);
-  
-  next();
-}
-
-// Optional authentication middleware (doesn't fail if no token)
-export function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (token) {
-    const decoded = verifyToken(token);
-    if (decoded) {
-      (req as any).user = decoded;
-    }
-  }
-
   next();
 }
 

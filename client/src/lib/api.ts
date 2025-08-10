@@ -52,7 +52,7 @@ export const authApi = {
   getMe: () => apiRequest("GET", "/api/auth/me"),
   logout: () => apiRequest("POST", "/api/auth/logout"),
   getStatus: () => apiRequest("GET", "/api/auth/status"),
-  guestLogin: () => apiRequest("POST", "/api/auth/guest"),
+  guestLogin: () => apiRequest("POST", "/api/auth/guest").then(res => res.json()),
 };
 
 // Tracks API
@@ -73,9 +73,6 @@ export const tracksApi = {
       method: "POST",
       body: formData,
       credentials: "include",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
     });
   },
   

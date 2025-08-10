@@ -24,14 +24,11 @@ queryClient.setDefaultOptions({
   queries: {
     ...queryClient.getDefaultOptions().queries,
     queryFn: async ({ queryKey }) => {
-      const token = localStorage.getItem("token");
       const res = await fetch(queryKey.join("/") as string, {
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (res.status === 401) {
-        localStorage.removeItem("token");
         window.location.href = "/login";
         return null;
       }

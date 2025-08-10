@@ -89,13 +89,9 @@ export default function Playlist() {
   };
 
   if (id === "new") {
-    // Handle new playlist creation
-    return (
-      <div className="flex-1 overflow-y-auto p-6">
-        <h1 className="text-3xl font-bold mb-6 text-spotify-white">Create New Playlist</h1>
-        {/* Add playlist creation form here */}
-      </div>
-    );
+    // Redirect to /create-playlist if someone tries to access /playlist/new
+    window.location.href = "/create-playlist";
+    return null;
   }
 
   if (isLoading) {
@@ -173,7 +169,7 @@ export default function Playlist() {
                   <p className="text-spotify-text mb-4">{playlist.description}</p>
                 )}
                 <div className="flex items-center space-x-2 text-sm text-spotify-text">
-                  <span>{playlist.user.name}</span>
+                  <span>{playlist.user?.name || "Unknown user"}</span>
                   <span>•</span>
                   <span>{playlist.trackCount} songs</span>
                 </div>

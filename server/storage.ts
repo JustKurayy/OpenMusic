@@ -161,7 +161,27 @@ export class DatabaseStorage implements IStorage {
 
   // Playlists
   async getPlaylist(id: number): Promise<PlaylistWithTracks | undefined> {
-    const [playlist] = await db.select().from(playlists).where(eq(playlists.id, id));
+    const [playlist] = await db
+      .select({
+        id: playlists.id,
+        userId: playlists.userId,
+        name: playlists.name,
+        description: playlists.description,
+        coverImage: playlists.coverImage,
+        createdAt: playlists.createdAt,
+        updatedAt: playlists.updatedAt,
+        user: {
+          id: users.id,
+          googleId: users.googleId,
+          email: users.email,
+          name: users.name,
+          avatar: users.avatar,
+          createdAt: users.createdAt,
+        },
+      })
+      .from(playlists)
+      .innerJoin(users, eq(playlists.userId, users.id))
+      .where(eq(playlists.id, id));
     if (!playlist) return undefined;
 
     const playlistTracksData = await db
@@ -183,7 +203,14 @@ export class DatabaseStorage implements IStorage {
           mimeType: tracks.mimeType,
           fileSize: tracks.fileSize,
           createdAt: tracks.createdAt,
-          user: users,
+          user: {
+            id: users.id,
+            googleId: users.googleId,
+            email: users.email,
+            name: users.name,
+            avatar: users.avatar,
+            createdAt: users.createdAt,
+          },
         },
       })
       .from(playlistTracks)

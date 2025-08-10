@@ -64,18 +64,33 @@ export default function Sidebar() {
             <h3 className="text-spotify-text text-sm font-semibold uppercase tracking-wider">
               Playlists
             </h3>
-            <Link href="/playlist/new">
-              <button className="text-spotify-text hover:text-spotify-white transition-colors duration-200">
+            <Link href="/create-playlist">
+              <button className="text-spotify-text hover:text-spotify-white transition-colors duration-200" title="Create Playlist">
                 <Plus className="w-4 h-4" />
               </button>
             </Link>
           </div>
+          {/* Recents toggle */}
+          <div className="flex items-center mb-2">
+            <button className="text-xs text-spotify-text hover:text-spotify-white px-2 py-1 rounded transition-colors duration-200 mr-2 bg-spotify-light-gray">Recents</button>
+            {/* TODO: Add sorting/filtering logic */}
+          </div>
           <ul className="space-y-2">
             {playlists.map((playlist) => (
-              <li key={playlist.id}>
+              <li key={playlist.id} className="flex items-center gap-2">
                 <Link href={`/playlist/${playlist.id}`}>
-                  <a className="block text-spotify-text hover:text-spotify-white transition-colors duration-200 py-1 truncate">
-                    {playlist.name}
+                  <a className="flex items-center gap-2 text-spotify-text hover:text-spotify-white transition-colors duration-200 py-1 truncate">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center overflow-hidden">
+                      {playlist.coverImage ? (
+                        <img src={playlist.coverImage} alt={playlist.name} className="w-8 h-8 object-cover rounded" />
+                      ) : (
+                        <span className="text-lg text-white">♪</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate font-medium">{playlist.name}</span>
+                      <span className="text-xs text-spotify-text truncate">{playlist.user?.name || ""}</span>
+                    </div>
                   </a>
                 </Link>
               </li>

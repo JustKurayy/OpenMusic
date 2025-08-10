@@ -37,54 +37,24 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-0">
       {/* Welcome Section */}
-      <section className="mb-8">
+      <section className="mb-8 mt-2">
         <h1 className="text-3xl font-bold mb-2 text-spotify-white">Good evening</h1>
         <p className="text-spotify-text">Welcome back to your music</p>
-        
-        {/* Quick Access Grid */}
-        {quickAccessItems.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {quickAccessItems.map((track) => (
-              <div
-                key={track.id}
-                className="bg-spotify-light-gray hover:bg-opacity-80 rounded-lg p-4 flex items-center space-x-4 cursor-pointer group transition-all duration-200 hover:scale-105"
-                onClick={() => handlePlayTrack(track)}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <img 
-                    src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=64&h=64&fit=crop`}
-                    alt="Track cover"
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-semibold group-hover:spotify-green transition-colors duration-200 text-spotify-white">
-                    {track.title}
-                  </h3>
-                  <p className="text-sm text-spotify-text">{track.artist}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* Recently Played */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+      {/* Recently Played Carousel */}
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-spotify-white">Recently played</h2>
-          <Button variant="ghost" className="text-spotify-text hover:text-spotify-white text-sm font-semibold">
-            Show all
-          </Button>
+          <Button variant="ghost" className="text-spotify-text hover:text-spotify-white text-sm font-semibold">Show all</Button>
         </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide pb-2">
           {recentTracks.map((track) => (
             <div
               key={track.id}
-              className="bg-spotify-light-gray hover:bg-opacity-80 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative"
+              className="min-w-[180px] max-w-[180px] bg-spotify-light-gray hover:bg-opacity-80 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative flex-shrink-0"
               onClick={() => handlePlayTrack(track)}
             >
               <img 
@@ -98,11 +68,9 @@ export default function Home() {
                 </h3>
                 <p className="text-xs text-spotify-text truncate">{track.artist}</p>
               </div>
-              
-              {/* Play Button Overlay */}
               <Button
                 size="sm"
-                className="absolute top-2 right-2 w-10 h-10 bg-spotify-green rounded-full opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 hover:scale-105"
+                className="absolute bottom-4 right-4 w-10 h-10 bg-spotify-green rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 flex items-center justify-center"
               >
                 <Play className="w-4 h-4 text-black ml-0.5" />
               </Button>
@@ -111,18 +79,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Discover More */}
+      {/* Discover More Carousel */}
       {allTracks.length > 6 && (
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-spotify-white">Discover more</h2>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {allTracks.slice(6, 12).map((track) => (
+          <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {allTracks.slice(6, 18).map((track) => (
               <div
                 key={track.id}
-                className="bg-spotify-light-gray hover:bg-opacity-80 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative"
+                className="min-w-[180px] max-w-[180px] bg-spotify-light-gray hover:bg-opacity-80 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative flex-shrink-0"
                 onClick={() => handlePlayTrack(track)}
               >
                 <img 
@@ -136,10 +103,9 @@ export default function Home() {
                   </h3>
                   <p className="text-xs text-spotify-text truncate">{track.artist}</p>
                 </div>
-                
                 <Button
                   size="sm"
-                  className="absolute top-2 right-2 w-10 h-10 bg-spotify-green rounded-full opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 hover:scale-105"
+                  className="absolute bottom-4 right-4 w-10 h-10 bg-spotify-green rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 flex items-center justify-center"
                 >
                   <Play className="w-4 h-4 text-black ml-0.5" />
                 </Button>

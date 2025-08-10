@@ -56,21 +56,28 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login />;
+    // Render login overlaying the entire app
+    return (
+      <div className="fixed inset-0 w-screen z-50 bg-black bg-opacity-90">
+        <Login />
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/library" component={Library} />
-        <Route path="/upload" component={Upload} />
-        <Route path="/playlist/:id" component={Playlist} />
-        <Route path="/search" component={SearchPage} />
-        <Route path="/create-playlist" component={CreatePlaylist} />
-        <Route component={NotFound} />
-      </Switch>
-    </div>
+    <Layout>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/library" component={Library} />
+          <Route path="/upload" component={Upload} />
+          <Route path="/playlist/:id" component={Playlist} />
+          <Route path="/search" component={SearchPage} />
+          <Route path="/create-playlist" component={CreatePlaylist} />
+          <Route component={NotFound} />
+        </Switch>
+      </div>
+    </Layout>
   );
 }
 
@@ -81,9 +88,7 @@ function App() {
         <AuthProvider>
           <PlayerProvider>
             <Toaster />
-            <Layout>
-              <AppContent />
-            </Layout>
+            <AppContent />
           </PlayerProvider>
         </AuthProvider>
       </TooltipProvider>

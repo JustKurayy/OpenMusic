@@ -99,6 +99,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/logout", (req, res) => {
     req.logout((err) => {
+      res.clearCookie("token", {
+        path: "/",
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
       if (err) {
         return res.status(500).json({ message: "Logout failed" });
       }

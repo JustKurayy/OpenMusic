@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi, type ApiUser } from "@/lib/api";
+import { useLocation } from "wouter";
 
 interface AuthContextType {
   user: ApiUser | null;
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Fetch user data
   const fetchUser = async () => {
@@ -57,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       queryClient.clear();
-      window.location.href = "/login";
+      setLocation("/login");
     }
   };
 

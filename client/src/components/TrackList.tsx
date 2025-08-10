@@ -51,90 +51,39 @@ export default function TrackList({
   }
 
   return (
-    <div className="bg-spotify-light-gray rounded-lg overflow-hidden">
-      {/* Table Header */}
-      {showHeader && (
-        <div className="px-6 py-3 border-b border-spotify-black border-opacity-20 grid grid-cols-12 gap-4 text-xs text-spotify-text font-medium uppercase tracking-wider">
-          <div className="col-span-1">#</div>
-          <div className="col-span-5">Title</div>
-          {showAlbum && <div className="col-span-3">Album</div>}
-          {showDateAdded && <div className="col-span-2">Date added</div>}
-          <div className="col-span-1 text-center">
-            <Clock className="w-4 h-4 mx-auto" />
-          </div>
-        </div>
-      )}
-      
-      {/* Track Rows */}
+    <ul className="bg-spotify-light-gray rounded-lg overflow-hidden divide-y divide-spotify-black divide-opacity-10">
       {tracks.map((track, index) => {
         const isCurrentTrack = currentTrack?.id === track.id;
-        
         return (
-          <div
+          <li
             key={track.id}
-            className="px-6 py-3 hover:bg-spotify-black hover:bg-opacity-50 grid grid-cols-12 gap-4 items-center group cursor-pointer transition-colors duration-200"
+            className={
+              `flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? 'bg-spotify-green bg-opacity-10' : ''}`
+            }
             onClick={() => handlePlayTrack(track)}
           >
-            <div className="col-span-1 text-spotify-text group-hover:text-spotify-white">
-              {isCurrentTrack && isPlaying ? (
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <div className="flex space-x-0.5">
-                    <div className="w-0.5 h-3 bg-spotify-green animate-pulse"></div>
-                    <div className="w-0.5 h-2 bg-spotify-green animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-0.5 h-4 bg-spotify-green animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <span className="group-hover:hidden">{index + 1}</span>
-                  <Play className="w-4 h-4 hidden group-hover:inline spotify-green" />
-                </>
-              )}
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center overflow-hidden">
+              <img 
+                src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=40&h=40&fit=crop`}
+                alt="Track cover"
+                className="w-8 h-8 object-cover rounded"
+              />
             </div>
-            
-            <div className="col-span-5 flex items-center space-x-3">
-              <div className="w-10 h-10 bg-spotify-gray rounded overflow-hidden">
-                <img 
-                  src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=40&h=40&fit=crop`}
-                  alt="Track cover"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <p className={`font-medium transition-colors duration-200 ${
-                  isCurrentTrack ? 'spotify-green' : 'text-spotify-white group-hover:spotify-green'
-                }`}>
-                  {track.title}
-                </p>
-                <p className="text-sm text-spotify-text">{track.artist}</p>
-              </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className={`truncate font-medium text-spotify-white group-hover:text-spotify-green ${isCurrentTrack ? 'text-spotify-green' : ''}`}>{track.title}</span>
+              <span className="text-xs text-spotify-text truncate">{track.artist}</span>
             </div>
-            
-            {showAlbum && (
-              <div className="col-span-3 text-spotify-text">
-                {track.album || "Single"}
-              </div>
-            )}
-            
-            {showDateAdded && (
-              <div className="col-span-2 text-spotify-text">
-                {formatDate(track.createdAt)}
-              </div>
-            )}
-            
-            <div className="col-span-1 text-center text-spotify-text">
-              <span>{formatTime(track.duration)}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-2 opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+            <span className="text-xs text-spotify-text ml-auto">{formatTime(track.duration)}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

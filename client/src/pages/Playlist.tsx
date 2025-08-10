@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Play, Edit2, Trash2 } from "lucide-react";
+import { MoreHorizontal, Play, Edit2, Trash2, Heart, Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ export default function Playlist() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [dominantColor, setDominantColor] = useState("rgb(83, 83, 83)");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { playTrack } = usePlayer();
@@ -23,6 +24,53 @@ export default function Playlist() {
     queryKey: ["/api/playlists", id],
     enabled: !!id && id !== "new",
   });
+
+  // Extract dominant color from playlist cover
+  useEffect(() => {
+    if (playlist?.coverImage) {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("No canvas context");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          let r = 0, g = 0, b = 0, pixelCount = 0;
+          // Sample every 5th pixel for more vibrancy
+          for (let i = 0; i < data.length; i += 20) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            pixelCount++;
+          }
+          if (pixelCount > 0) {
+            r = Math.floor(r / pixelCount);
+            g = Math.floor(g / pixelCount);
+            b = Math.floor(b / pixelCount);
+            // Slightly boost vibrancy
+            const boost = 1.15;
+            r = Math.min(255, Math.floor(r * boost));
+            g = Math.min(255, Math.floor(g * boost));
+            b = Math.min(255, Math.floor(b * boost));
+            setDominantColor(`rgb(${r}, ${g}, ${b})`);
+          } else {
+            setDominantColor("rgb(83, 83, 83)");
+          }
+        } catch (e) {
+          setDominantColor("rgb(83, 83, 83)");
+        }
+      };
+      img.onerror = () => setDominantColor("rgb(83, 83, 83)");
+      img.src = playlist.coverImage + (playlist.coverImage.indexOf('?') === -1 ? '?' : '&') + 'cachebust=' + Date.now();
+    } else {
+      setDominantColor("rgb(83, 83, 83)");
+    }
+  }, [playlist?.coverImage]);
 
   const updateMutation = useMutation({
     mutationFn: (data: { name: string; description: string }) =>
@@ -89,21 +137,29 @@ export default function Playlist() {
   };
 
   if (id === "new") {
-    // Redirect to /create-playlist if someone tries to access /playlist/new
     window.location.href = "/create-playlist";
     return null;
   }
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-spotify-light-gray rounded w-48 mb-6"></div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-spotify-light-gray rounded"></div>
-            ))}
+      <div className="flex-1 overflow-y-auto">
+        <div className="h-[340px] bg-gradient-to-b from-gray-700 to-gray-900 animate-pulse">
+          <div className="p-6 pt-16">
+            <div className="flex items-end space-x-6">
+              <div className="w-60 h-60 bg-gray-600 rounded shadow-2xl"></div>
+              <div className="flex-1 space-y-4">
+                <div className="h-4 bg-gray-600 rounded w-20"></div>
+                <div className="h-12 bg-gray-600 rounded w-96"></div>
+                <div className="h-4 bg-gray-600 rounded w-64"></div>
+              </div>
+            </div>
           </div>
+        </div>
+        <div className="px-6 py-6 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-14 bg-gray-800 rounded"></div>
+          ))}
         </div>
       </div>
     );
@@ -111,67 +167,96 @@ export default function Playlist() {
 
   if (!playlist) {
     return (
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-2 text-spotify-white">Playlist not found</h2>
-          <p className="text-spotify-text">The playlist you're looking for doesn't exist or you don't have access to it.</p>
+          <h2 className="text-2xl font-bold mb-2 text-white">Playlist not found</h2>
+          <p className="text-gray-400">The playlist you're looking for doesn't exist or you don't have access to it.</p>
         </div>
       </div>
     );
   }
 
   const tracks = playlist.tracks.map(pt => pt.track);
+  const hasCoverImage = !!playlist.coverImage;
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      {/* Playlist Header */}
-      <div className="bg-gradient-to-b from-spotify-light-gray to-transparent p-6 pb-0">
-        <div className="flex items-end space-x-6 mb-6">
+    <div className="min-h-screen flex flex-col bg-black">
+      {/* Dynamic Header with Gradient */}
+      <div 
+        className="relative h-[340px] overflow-hidden"
+        style={{
+          background: hasCoverImage
+            ? `linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%), linear-gradient(180deg, ${dominantColor} 0%, #121212 100%)`
+            : 'linear-gradient(180deg, #a4508b 0%, #5f0a87 100%)',
+        }}
+      >
+        {/* Optional: add a subtle overlay for extra contrast */}
+        <div className="absolute inset-0" style={{background: hasCoverImage ? 'rgba(0,0,0,0.15)' : 'transparent'}} />
+        <div className="relative px-8 pt-20 pb-6 h-full flex items-end space-x-6">
           {/* Playlist Cover */}
-          <div className="w-48 h-48 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-2xl">
-            {playlist.coverImage ? (
-              <img src={playlist.coverImage} alt={playlist.name} className="w-full h-full object-cover rounded-lg" />
+          <div className="w-56 h-56 flex-shrink-0 shadow-2xl rounded-md">
+            {hasCoverImage ? (
+              <img 
+                src={playlist.coverImage} 
+                alt={playlist.name} 
+                className="w-full h-full object-cover rounded-md shadow-2xl" 
+              />
             ) : (
-              <div className="text-6xl text-white">♪</div>
+              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-md flex items-center justify-center shadow-2xl">
+                <div className="text-7xl text-white opacity-80">♪</div>
+              </div>
             )}
           </div>
-          
           {/* Playlist Info */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-spotify-white mb-2">PLAYLIST</p>
+          <div className="flex-1 min-w-0 pb-2">
+            <p className="text-sm font-medium text-white mb-2 tracking-wide uppercase">Public Playlist</p>
             {isEditing ? (
               <div className="space-y-4">
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="text-4xl font-bold bg-transparent border-none p-0 text-spotify-white"
-                  style={{ fontSize: '2.5rem', lineHeight: '1' }}
+                  className="text-7xl font-black bg-transparent border-none p-0 text-white placeholder-gray-400 focus:ring-0"
+                  style={{ fontSize: '6rem', lineHeight: '1', fontWeight: '900' }}
                 />
                 <Input
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="text-spotify-text bg-transparent border-none p-0"
+                  className="text-lg text-gray-300 bg-transparent border-none p-0 placeholder-gray-500 focus:ring-0"
                   placeholder="Add a description"
                 />
-                <div className="flex space-x-2">
-                  <Button size="sm" onClick={handleSave} disabled={updateMutation.isPending}>
+                <div className="flex space-x-3 pt-4">
+                  <Button 
+                    size="sm" 
+                    onClick={handleSave} 
+                    disabled={updateMutation.isPending}
+                    className="bg-white text-black hover:bg-gray-200 font-medium px-6"
+                  >
                     Save
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setIsEditing(false)}
+                    className="border-gray-500 text-white hover:bg-gray-800"
+                  >
                     Cancel
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <h1 className="text-4xl font-bold mb-4 text-spotify-white">{playlist.name}</h1>
+                <h1 className="text-8xl font-black mb-4 text-white leading-none break-words" style={{ fontWeight: '900' }}>
+                  {playlist.name}
+                </h1>
                 {playlist.description && (
-                  <p className="text-spotify-text mb-4">{playlist.description}</p>
+                  <p className="text-lg text-gray-300 mb-4 leading-relaxed">
+                    {playlist.description}
+                  </p>
                 )}
-                <div className="flex items-center space-x-2 text-sm text-spotify-text">
-                  <span>{playlist.user?.name || "Unknown user"}</span>
-                  <span>•</span>
-                  <span>{playlist.trackCount} songs</span>
+                <div className="flex items-center space-x-1 text-sm text-white">
+                  <span className="font-medium">{playlist.user?.name || "Unknown User"}</span>
+                  <span className="text-white mx-2">•</span>
+                  <span className="text-white">{playlist.trackCount || 0} songs</span>
                 </div>
               </>
             )}
@@ -180,55 +265,72 @@ export default function Playlist() {
       </div>
 
       {/* Controls */}
-      <div className="px-6 py-4 flex items-center space-x-4">
-        <Button
-          size="lg"
-          className="w-14 h-14 bg-spotify-green hover:bg-spotify-green-hover text-black rounded-full"
-          onClick={handlePlayPlaylist}
-          disabled={tracks.length === 0}
-        >
-          <Play className="w-6 h-6 ml-1" />
-        </Button>
-        
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-spotify-text hover:text-spotify-white">
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-spotify-gray border-spotify-light-gray">
-            <DialogHeader>
-              <DialogTitle className="text-spotify-white">Playlist Options</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
+      <div className="px-8 py-6 bg-gradient-to-b from-black/60 to-black">
+        <div className="flex items-center space-x-8">
+          <Button
+            size="lg"
+            className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full transition-all duration-200 shadow-lg"
+            onClick={handlePlayPlaylist}
+            disabled={tracks.length === 0}
+          >
+            <Play className="w-5 h-5 ml-0.5 fill-current" />
+          </Button>
+          
+          <Dialog>
+            <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start text-spotify-white hover:text-spotify-green"
-                onClick={handleEdit}
+                size="lg"
+                className="w-8 h-8 text-gray-400 hover:text-white p-0 hover:scale-110 transition-all duration-200"
               >
-                <Edit2 className="w-4 h-4 mr-2" />
-                Edit Details
+                <MoreHorizontal className="w-8 h-8" />
               </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-red-400 hover:text-red-300"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Playlist
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="bg-gray-800 border-gray-700">
+              <DialogHeader>
+                <DialogTitle className="text-white">Playlist Options</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
+                  onClick={handleEdit}
+                >
+                  <Edit2 className="w-4 h-4 mr-3" />
+                  Edit Details
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
+                >
+                  <Share className="w-4 h-4 mr-3" />
+                  Share
+                </Button>
+                <hr className="border-gray-700 my-2" />
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-gray-700 h-12"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-3" />
+                  Delete Playlist
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Track List */}
-      <div className="px-6 pb-6">
+      <div className="bg-black px-8 pb-6 flex-1">
         {tracks.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold mb-2 text-spotify-white">This playlist is empty</h3>
-            <p className="text-spotify-text">Add some songs to get started</p>
+          <div className="text-center py-16">
+            <h3 className="text-2xl font-bold mb-4 text-white">Start by searching for songs and artists</h3>
+            <p className="text-gray-400 mb-8 text-lg">They'll show up here once you add them.</p>
+            <Button className="bg-white text-black hover:bg-gray-200 font-semibold px-8 py-3 rounded-full text-sm">
+              Find something to play
+            </Button>
           </div>
         ) : (
           <TrackList tracks={tracks} showAlbum={true} showDateAdded={false} />

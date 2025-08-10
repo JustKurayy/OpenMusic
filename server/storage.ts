@@ -14,6 +14,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserGoogleId(userId: number, googleId: string): Promise<void>;
   
   // Tracks
   getTrack(id: number): Promise<Track | undefined>;
@@ -49,13 +50,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByGoogleId(googleId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+      return user || undefined;
+    } catch (err) {
+      console.error('[DB ERROR] getUserByGoogleId:', err);
+      throw err;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async updateUserGoogleId(userId: number, googleId: string): Promise<void> {
+    await db.update(users)
+      .set({ googleId })
+      .where(eq(users.id, userId));
   }
 
   // Tracks

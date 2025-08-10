@@ -25,6 +25,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          console.log('[GOOGLE OAUTH PROFILE]', JSON.stringify(profile, null, 2));
           const googleId = profile.id;
           const email = profile.emails?.[0]?.value;
           const name = profile.displayName;
@@ -34,26 +35,19 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
             return done(new Error("No email found in Google profile"));
           }
 
-          // Check if user exists
+          // Check if user exists by Google ID
           let user = await storage.getUserByGoogleId(googleId);
-          
           if (!user) {
-            // Check if user exists with this email
+            // If not, check if a user exists with this email
             user = await storage.getUserByEmail(email);
-            
             if (user) {
-              // Update existing user with Google ID
-              // This would require an update method in storage, for now create new
-              user = await storage.createUser({
-                googleId,
-                email,
-                name,
-                avatar,
-              });
+              // If user exists with this email but no Google ID, update their Google ID
+              await storage.updateUserGoogleId(user.id, googleId);
+              user = await storage.getUserByGoogleId(googleId);
             } else {
-              // Create new user
+              // Otherwise, create a new user
               user = await storage.createUser({
-                googleId,
+                googleId: googleId || undefined,
                 email,
                 name,
                 avatar,
@@ -63,6 +57,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
 
           return done(null, user);
         } catch (error) {
+          console.error('[GOOGLE OAUTH ERROR]', error);
           return done(error);
         }
       }

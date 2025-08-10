@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi, type ApiUser } from "@/lib/api";
 
@@ -40,6 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   const login = async (_?: any) => {
     await fetchUser();

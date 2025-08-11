@@ -90,7 +90,14 @@ export class DatabaseStorage implements IStorage {
         mimeType: tracks.mimeType,
         fileSize: tracks.fileSize,
         createdAt: tracks.createdAt,
-        user: users,
+        user: {
+          id: users.id,
+          googleId: users.googleId,
+          email: users.email,
+          name: users.name,
+          avatar: users.avatar,
+          createdAt: users.createdAt,
+        },
       })
       .from(tracks)
       .innerJoin(users, eq(tracks.userId, users.id))

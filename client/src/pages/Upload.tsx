@@ -183,7 +183,7 @@ export default function Upload() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-900 to-black min-h-screen">
       <h1 className="text-3xl font-bold mb-6 text-spotify-white">Upload Your Music</h1>
       
       {/* Upload Area */}

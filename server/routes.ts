@@ -125,8 +125,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tracks", authenticateUserOrGuest, async (req, res) => {
     try {
       const { search, my } = req.query;
-      // You can use req.user here if needed
-      const tracks = await storage.getAllTracks();
+      let tracks;
+      if (my === "true" && req.user) {
+        tracks = await storage.getTracksByUser((req.user as any).id);
+      } else if (search) {
+        tracks = await storage.searchTracks(search as string);
+      } else {
+        tracks = await storage.getAllTracks();
+      }
       res.json(tracks);
     } catch (error) {
       res.status(500).json({ message: "Server error" });

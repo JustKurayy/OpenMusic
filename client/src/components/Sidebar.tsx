@@ -20,7 +20,7 @@ export default function Sidebar() {
 
   const mainNavItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/search", label: "Search", icon: Search }
+    { href: "/search", label: "Search", icon: Search },
   ];
 
   return (
@@ -66,23 +66,24 @@ export default function Sidebar() {
         {/* Your Library Section */}
         <div className="mt-8 flex-1 flex flex-col">
           <div className="px-3 lg:px-6">
-            <button
-              onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
-              className="flex items-center justify-between w-full py-3 px-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-900 transition-all duration-200 group"
-            >
-              <div className="flex items-center space-x-4">
-                <Library className="w-6 h-6 flex-shrink-0" />
-                <span className="font-semibold hidden lg:block">Your Library</span>
-              </div>
-              <div className="hidden lg:flex items-center space-x-2">
-                <button className="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200" title="Create playlist or folder">
-                  <Plus className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200" title="Show more">
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </button>
+            <Link href="/library">
+              <a
+                className="flex items-center justify-between w-full py-3 px-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-900 transition-all duration-200 group"
+              >
+                <div className="flex items-center space-x-4">
+                  <Library className="w-6 h-6 flex-shrink-0" />
+                  <span className="font-semibold hidden lg:block">Your Library</span>
+                </div>
+                <div className="hidden lg:flex items-center space-x-2">
+                  <button className="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200" title="Create playlist or folder">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200" title="Show more">
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </a>
+            </Link>
           </div>
 
           {/* Library Content */}

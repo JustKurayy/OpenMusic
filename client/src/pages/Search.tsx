@@ -26,7 +26,7 @@ export default function Search() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-spotify-black text-spotify-white pt-12">
+    <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-spotify-white pt-12">
       <Card className="w-full max-w-2xl p-8 bg-spotify-gray border-spotify-light-gray">
         <h1 className="text-2xl font-bold mb-6 text-spotify-white">Search Music</h1>
         <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6">

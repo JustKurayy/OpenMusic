@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SearchDropdown from "@/components/SearchDropdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearch } from "@/contexts/SearchContext";
 
 export default function TopBar() {
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
+  const { query, setQuery } = useSearch();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -38,9 +39,9 @@ export default function TopBar() {
           <Input
             type="text"
             placeholder="What do you want to play?"
-            value={searchQuery}
+            value={query}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
+              setQuery(e.target.value);
               setShowDropdown(true);
             }}
             onFocus={() => setShowDropdown(true)}
@@ -48,8 +49,8 @@ export default function TopBar() {
             className="w-full bg-gray-800 bg-opacity-80 hover:bg-opacity-100 focus:bg-white focus:text-black border-0 rounded-full py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:placeholder-gray-500 transition-all duration-200 focus:ring-0 focus:outline-none"
           />
         </div>
-        {showDropdown && searchQuery && (
-          <SearchDropdown query={searchQuery} />
+        {showDropdown && query && (
+          <SearchDropdown query={query} />
         )}
       </div>
 

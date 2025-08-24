@@ -40,27 +40,33 @@ export default function Playlist() {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
-          let r = 0, g = 0, b = 0, pixelCount = 0;
-          // Sample every 5th pixel for more vibrancy
+          // Sample pixels and find the most vibrant color
+          let maxSaturation = 0;
+          let mostVibrantColor = { r: 83, g: 83, b: 83 };
+          
           for (let i = 0; i < data.length; i += 20) {
-            r += data[i];
-            g += data[i + 1];
-            b += data[i + 2];
-            pixelCount++;
+            const pixelR = data[i];
+            const pixelG = data[i + 1];
+            const pixelB = data[i + 2];
+            
+            // Calculate saturation (simplified)
+            const max = Math.max(pixelR, pixelG, pixelB);
+            const min = Math.min(pixelR, pixelG, pixelB);
+            const saturation = max - min;
+            
+            if (saturation > maxSaturation && max > 50) { // Avoid very dark colors
+              maxSaturation = saturation;
+              mostVibrantColor = { r: pixelR, g: pixelG, b: pixelB };
+            }
           }
-          if (pixelCount > 0) {
-            r = Math.floor(r / pixelCount);
-            g = Math.floor(g / pixelCount);
-            b = Math.floor(b / pixelCount);
-            // Slightly boost vibrancy
-            const boost = 1.15;
-            r = Math.min(255, Math.floor(r * boost));
-            g = Math.min(255, Math.floor(g * boost));
-            b = Math.min(255, Math.floor(b * boost));
-            setDominantColor(`rgb(${r}, ${g}, ${b})`);
-          } else {
-            setDominantColor("rgb(83, 83, 83)");
-          }
+          
+          // Boost vibrancy for more prominent colors
+          const boost = 1.3;
+          const finalR = Math.min(255, Math.floor(mostVibrantColor.r * boost));
+          const finalG = Math.min(255, Math.floor(mostVibrantColor.g * boost));
+          const finalB = Math.min(255, Math.floor(mostVibrantColor.b * boost));
+          
+          setDominantColor(`rgb(${finalR}, ${finalG}, ${finalB})`);
         } catch (e) {
           setDominantColor("rgb(83, 83, 83)");
         }
@@ -186,12 +192,16 @@ export default function Playlist() {
         className="relative h-[340px] overflow-hidden"
         style={{
           background: hasCoverImage
-            ? `linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%), linear-gradient(180deg, ${dominantColor} 0%, #121212 100%)`
+            ? `linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 70%, transparent 100%), linear-gradient(180deg, ${dominantColor} 0%, ${dominantColor}40 50%, #121212 100%)`
             : 'linear-gradient(180deg, #a4508b 0%, #5f0a87 100%)',
         }}
       >
-        {/* Optional: add a subtle overlay for extra contrast */}
-        <div className="absolute inset-0" style={{background: hasCoverImage ? 'rgba(0,0,0,0.15)' : 'transparent'}} />
+        {/* Enhanced overlay for better contrast and color prominence */}
+        <div className="absolute inset-0" style={{
+          background: hasCoverImage 
+            ? `linear-gradient(135deg, ${dominantColor}20 0%, transparent 50%, ${dominantColor}10 100%)`
+            : 'transparent'
+        }} />
         <div className="relative px-8 pt-20 pb-6 h-full flex items-end space-x-6">
           {/* Playlist Cover */}
           <div className="w-56 h-56 flex-shrink-0 shadow-2xl rounded-md">

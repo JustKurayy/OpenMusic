@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PlayerProvider } from "@/contexts/PlayerContext";
+import { SearchProvider } from "@/contexts/SearchContext";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Library from "@/pages/Library";
@@ -87,8 +88,10 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <PlayerProvider>
-            <Toaster />
-            <AppContent />
+            <SearchProvider>
+              <Toaster />
+              <AppContent />
+            </SearchProvider>
           </PlayerProvider>
         </AuthProvider>
       </TooltipProvider>

@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useRef, useEffect } from "react";
 import { tracksApi, type ApiTrack } from "@/lib/api";
+import { lyricsApi } from "@/lib/api";
+
+interface LyricsLine {
+  time: number;
+  text: string;
+}
 
 interface PlayerContextType {
   currentTrack: ApiTrack | null;
@@ -9,6 +15,10 @@ interface PlayerContextType {
   volume: number;
   queue: ApiTrack[];
   currentIndex: number;
+  showLyrics: boolean;
+  lyrics: LyricsLine[];
+  lyricsLoading: boolean;
+  lyricsError: string | null;
   
   // Actions
   playTrack: (track: ApiTrack, queue?: ApiTrack[]) => void;
@@ -21,6 +31,8 @@ interface PlayerContextType {
   previous: () => void;
   addToQueue: (track: ApiTrack) => void;
   removeFromQueue: (index: number) => void;
+  toggleLyrics: () => void;
+  fetchLyrics: (title: string, artist: string) => Promise<void>;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -33,6 +45,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(0.7);
   const [queue, setQueue] = useState<ApiTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyrics, setLyrics] = useState<LyricsLine[]>([]);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,6 +125,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }).catch((error) => {
       console.error("Error playing track:", error);
     });
+
+    // Fetch lyrics for the new track
+    if (showLyrics) {
+      fetchLyrics(track.title, track.artist);
+    }
   };
 
   const pause = () => {
@@ -186,6 +207,69 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const toggleLyrics = () => {
+    const newShowLyrics = !showLyrics;
+    setShowLyrics(newShowLyrics);
+    
+    if (newShowLyrics && currentTrack) {
+      fetchLyrics(currentTrack.title, currentTrack.artist);
+    }
+  };
+
+  const fetchLyrics = async (title: string, artist: string) => {
+    setLyricsLoading(true);
+    setLyricsError(null);
+    
+    try {
+      const response = await lyricsApi.getLyrics(title, artist);
+      const data = await response.json();
+      
+      if (data.lyrics) {
+        if (data.synced) {
+          // Parse synced lyrics (LRC format)
+          const lines = data.lyrics
+            .split('\n')
+            .filter((line: string) => line.trim() && line.includes('['))
+            .map((line: string) => {
+              const timeMatch = line.match(/\[(\d{2}):(\d{2})\.(\d{2})\]/);
+              if (timeMatch) {
+                const minutes = parseInt(timeMatch[1]);
+                const seconds = parseInt(timeMatch[2]);
+                const centiseconds = parseInt(timeMatch[3]);
+                const time = minutes * 60 + seconds + centiseconds / 100;
+                const text = line.replace(/\[.*?\]/g, '').trim();
+                return { time, text };
+              }
+              return null;
+            })
+            .filter((line: LyricsLine | null) => line !== null) as LyricsLine[];
+          
+          setLyrics(lines);
+        } else {
+          // Plain lyrics - split into lines with estimated timing
+          const lines = data.lyrics
+            .split('\n')
+            .filter((line: string) => line.trim())
+            .map((line: string, index: number) => ({
+              time: index * 3, // Estimate 3 seconds per line
+              text: line.trim()
+            }));
+          
+          setLyrics(lines);
+        }
+      } else {
+        setLyricsError("No lyrics found");
+        setLyrics([]);
+      }
+    } catch (error) {
+      console.error("Error fetching lyrics:", error);
+      setLyricsError("Failed to load lyrics");
+      setLyrics([]);
+    } finally {
+      setLyricsLoading(false);
+    }
+  };
+
   return (
     <PlayerContext.Provider
       value={{
@@ -196,6 +280,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         volume,
         queue,
         currentIndex,
+        showLyrics,
+        lyrics,
+        lyricsLoading,
+        lyricsError,
         playTrack,
         pause,
         resume,
@@ -206,6 +294,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         previous,
         addToQueue,
         removeFromQueue,
+        toggleLyrics,
+        fetchLyrics,
       }}
     >
       {children}

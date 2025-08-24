@@ -104,6 +104,17 @@ export const playlistsApi = {
   removeTrack: (playlistId: number, trackId: number) =>
     apiRequest("DELETE", `/api/playlists/${playlistId}/tracks/${trackId}`),
   
-  reorderTracks: (playlistId: number, trackIds: number[]) =>
+  reorder: (playlistId: number, trackIds: number[]) =>
     apiRequest("PUT", `/api/playlists/${playlistId}/reorder`, { trackIds }),
+};
+
+// Lyrics API
+export const lyricsApi = {
+  getLyrics: (title: string, artist: string) => {
+    const params = new URLSearchParams({
+      title: title,
+      artist: artist,
+    });
+    return apiRequest("GET", `/api/lyrics?${params}`);
+  },
 };

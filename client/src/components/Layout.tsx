@@ -3,9 +3,12 @@ import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MusicPlayer from "@/components/MusicPlayer";
 import QueueDrawer from "@/components/QueueDrawer";
+import Lyrics from "@/components/Lyrics";
+import { usePlayer } from "@/contexts/PlayerContext";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [queueOpen, setQueueOpen] = useState(false);
+  const { showLyrics } = usePlayer();
 
   return (
     <div className="flex flex-col h-screen bg-spotify-black text-spotify-white overflow-hidden">
@@ -16,7 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Sidebar />
         {/* Main content in the center */}
         <main className="flex-1 overflow-y-auto max-w-full w-full mx-auto">
-          {children}
+          {showLyrics ? <Lyrics /> : children}
         </main>
         {/* QueueDrawer on the right */}
         <QueueDrawer isOpen={queueOpen} onClose={() => setQueueOpen(false)} />

@@ -22,6 +22,8 @@ export default function MusicPlayer({ onToggleQueue }: { onToggleQueue?: () => v
     setVolume,
     next,
     previous,
+    showLyrics,
+    toggleLyrics,
   } = usePlayer();
 
   const [isLiked, setIsLiked] = useState(false);
@@ -263,8 +265,9 @@ export default function MusicPlayer({ onToggleQueue }: { onToggleQueue?: () => v
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-gray-400 hover:text-white transition-colors duration-200"
-            title="Now playing view"
+            onClick={toggleLyrics}
+            className={`${showLyrics ? 'text-green-500' : 'text-gray-400 hover:text-white'} transition-colors duration-200`}
+            title={showLyrics ? "Hide lyrics" : "Show lyrics"}
           >
             <Mic2 className="w-4 h-4" />
           </Button>

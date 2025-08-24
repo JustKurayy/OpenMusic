@@ -352,6 +352,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lyrics API endpoint
+  app.get("/api/lyrics", authenticateUserOrGuest, async (req, res) => {
+    try {
+      const { title, artist } = req.query;
+      console.log("[DEBUG] /api/lyrics:", { title, artist });
+      
+      if (!title || !artist) {
+        return res.status(400).json({ message: "Title and artist are required" });
+      }
+
+      // Search for lyrics using LRClib API
+      const searchUrl = `https://lrclib.net/api/search?track_name=${encodeURIComponent(title as string)}&artist_name=${encodeURIComponent(artist as string)}`;
+      
+      const searchResponse = await fetch(searchUrl);
+      if (!searchResponse.ok) {
+        return res.status(404).json({ message: "Lyrics not found" });
+      }
+
+      const searchResults = await searchResponse.json();
+      
+      if (!searchResults.data || searchResults.data.length === 0) {
+        return res.status(404).json({ message: "Lyrics not found" });
+      }
+
+      // Get the first result (most relevant)
+      const lyricsId = searchResults.data[0].id;
+      
+      // Fetch the actual lyrics
+      const lyricsUrl = `https://lrclib.net/api/get/${lyricsId}`;
+      const lyricsResponse = await fetch(lyricsUrl);
+      
+      if (!lyricsResponse.ok) {
+        return res.status(404).json({ message: "Lyrics not found" });
+      }
+
+      const lyricsData = await lyricsResponse.json();
+      
+      res.json({
+        lyrics: lyricsData.syncedLyrics || lyricsData.plainLyrics,
+        synced: !!lyricsData.syncedLyrics,
+        source: "LRClib"
+      });
+    } catch (error) {
+      console.error("Error fetching lyrics:", error);
+      res.status(500).json({ message: "Failed to fetch lyrics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

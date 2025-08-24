@@ -364,31 +364,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Search for lyrics using LRClib API
       const searchUrl = `https://lrclib.net/api/search?track_name=${encodeURIComponent(title as string)}&artist_name=${encodeURIComponent(artist as string)}`;
-      
-      const searchResponse = await fetch(searchUrl);
+      console.log("[DEBUG] Fetching lyrics from:", searchUrl);
+      const searchResponse = await fetch(searchUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115.0.0.0 Safari/537.36"
+        }
+      });
       if (!searchResponse.ok) {
+        console.log("bad response from lrclib");
         return res.status(404).json({ message: "Lyrics not found" });
       }
 
       const searchResults = await searchResponse.json();
-      
-      if (!searchResults.data || searchResults.data.length === 0) {
-        return res.status(404).json({ message: "Lyrics not found" });
-      }
 
-      // Get the first result (most relevant)
-      const lyricsId = searchResults.data[0].id;
-      
+        // LRClib returns an array of results, not an object with 'data'
+        const results = Array.isArray(searchResults) ? searchResults : searchResults.data;
+        if (!results || results.length === 0) {
+          console.log("no results from lrclib");
+          return res.status(404).json({ message: "Lyrics not found" });
+        }
+
+        // Robust match for track and artist
+        const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/gi, '').trim();
+        const titleNorm = normalize(title as string);
+        const artistNorm = normalize(artist as string);
+        const match = results.find((item: any) =>
+          item.trackName && item.artistName &&
+          normalize(item.trackName) === titleNorm &&
+          normalize(item.artistName) === artistNorm
+        );
+        if (!match) {
+          console.log("no matching track in lrclib results");
+          return res.status(404).json({ message: "Lyrics not found" });
+        }
+
       // Fetch the actual lyrics
-      const lyricsUrl = `https://lrclib.net/api/get/${lyricsId}`;
-      const lyricsResponse = await fetch(lyricsUrl);
-      
+      const lyricsUrl = `https://lrclib.net/api/get/${match.id}`;
+      const lyricsResponse = await fetch(lyricsUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115.0.0.0 Safari/537.36"
+        }
+      });
       if (!lyricsResponse.ok) {
+        console.log("bad response when fetching lyrics from lrclib");
         return res.status(404).json({ message: "Lyrics not found" });
       }
 
       const lyricsData = await lyricsResponse.json();
-      
       res.json({
         lyrics: lyricsData.syncedLyrics || lyricsData.plainLyrics,
         synced: !!lyricsData.syncedLyrics,

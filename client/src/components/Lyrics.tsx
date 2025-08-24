@@ -14,29 +14,15 @@ export default function Lyrics() {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentLineRef = useRef<HTMLDivElement>(null);
 
-  // Generate a random background color when track changes
+  // Generate a random solid background color with good contrast
   useEffect(() => {
     if (currentTrack) {
-      const colors = [
-        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-        'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-        'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-        'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
-        'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-        'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)',
-        'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-        'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-        'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
-      ];
-      
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      setBackgroundColor(randomColor);
+      // Pick a random hue, keep saturation and lightness for contrast
+      const hue = Math.floor(Math.random() * 360);
+      const saturation = 60 + Math.floor(Math.random() * 20); // 60-80%
+      const lightness = 25 + Math.floor(Math.random() * 20); // 25-45%
+      const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      setBackgroundColor(color);
     }
   }, [currentTrack]);
 
@@ -114,45 +100,52 @@ export default function Lyrics() {
 
   return (
     <div 
-      className="relative h-full overflow-hidden"
+      className="relative h-full overflow-hidden font-[Inter,sans-serif]"
       style={{ background: backgroundColor }}
     >
-      {/* Background overlay for better text contrast */}
-      <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-      
-      {/* Track info header */}
-      <div className="relative z-10 p-6 text-center">
-        <h1 className="text-2xl font-bold text-white mb-2">
-          {currentTrack.title}
-        </h1>
-        <p className="text-lg text-white text-opacity-80">
-          {currentTrack.artist}
-        </p>
-      </div>
+      {/* Overlay for better text contrast, but no gradient */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
 
       {/* Lyrics container */}
       <div 
         ref={containerRef}
-        className="relative z-10 px-6 pb-6 h-[calc(100%-120px)] overflow-y-auto scrollbar-hide"
+        className="relative z-10 p-6 h-full overflow-y-auto scrollbar-hide text-left"
       >
         <div className="space-y-6">
           {lyrics.map((line, index) => (
             <div
               key={index}
               ref={index === currentLineIndex ? currentLineRef : null}
-              className={`text-center transition-all duration-300 ${
-                index === currentLineIndex
-                  ? 'text-white text-2xl font-semibold'
-                  : index < currentLineIndex
-                  ? 'text-white text-opacity-40 text-lg'
-                  : 'text-white text-opacity-60 text-lg'
-              }`}
+              className="transition-all duration-200 cursor-pointer select-none font-bold text-3xl md:text-4xl lg:text-5xl"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                textAlign: 'left',
+                paddingLeft: '0.5rem',
+                borderRadius: '0.375rem',
+                color: 'rgba(255,255,255,' + (index === currentLineIndex ? '1' : '0.7') + ')',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.textDecoration = 'underline';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.textDecoration = '';
+                e.currentTarget.style.color = 'rgba(255,255,255,' + (index === currentLineIndex ? '1' : '0.7') + ')';
+              }}
+              onClick={() => {
+                if (currentTrack && line.time !== undefined) {
+                  // Seek to the time of the clicked line
+                  const audio = document.querySelector('audio');
+                  if (audio) {
+                    audio.currentTime = line.time;
+                  }
+                }
+              }}
             >
               {line.text}
             </div>
           ))}
         </div>
-        
         {/* Spacer at the bottom for better scrolling */}
         <div className="h-32"></div>
       </div>

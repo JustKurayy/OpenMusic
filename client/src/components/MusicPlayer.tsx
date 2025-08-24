@@ -56,7 +56,7 @@ export default function MusicPlayer({ onToggleQueue }: { onToggleQueue?: () => v
 
   if (!currentTrack) {
     return (
-      <footer className="bg-black border-t border-gray-800 px-4 py-3 h-24 flex items-center">
+      <footer className="bg-black px-4 py-3 h-24 flex items-center">
         <div className="flex items-center justify-between w-full">
           {/* Empty Track Info */}
           <div className="flex items-center space-x-4 flex-1 min-w-0">
@@ -142,7 +142,7 @@ export default function MusicPlayer({ onToggleQueue }: { onToggleQueue?: () => v
   const VolumeIcon = getVolumeIcon();
 
   return (
-    <footer className="bg-black border-t border-gray-800 px-4 py-3 h-24 flex items-center">
+    <footer className="bg-black px-4 py-3 h-24 flex items-center">
       <div className="flex items-center justify-between w-full">
         {/* Currently Playing */}
         <div className="flex items-center space-x-4 flex-1 min-w-0 max-w-sm">

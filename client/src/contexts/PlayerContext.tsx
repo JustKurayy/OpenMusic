@@ -1,4 +1,10 @@
 import { createContext, useContext, useState, useRef, useEffect } from "react";
+// Fix for window.lyricsCache typing
+declare global {
+  interface Window {
+    lyricsCache?: { [key: string]: any };
+  }
+}
 import { tracksApi, type ApiTrack } from "@/lib/api";
 import { lyricsApi } from "@/lib/api";
 
@@ -219,11 +225,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const fetchLyrics = async (title: string, artist: string) => {
     setLyricsLoading(true);
     setLyricsError(null);
-    
+    // Lyrics cache by track id
+    if (!window.lyricsCache) window.lyricsCache = {};
+    const cacheKey = `${title}::${artist}`;
+    if (window.lyricsCache[cacheKey]) {
+      setLyrics(window.lyricsCache[cacheKey]);
+      setLyricsLoading(false);
+      return;
+    }
     try {
       const response = await lyricsApi.getLyrics(title, artist);
       const data = await response.json();
-      
       if (data.lyrics) {
         if (data.synced) {
           // Parse synced lyrics (LRC format)
@@ -236,14 +248,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 const minutes = parseInt(timeMatch[1]);
                 const seconds = parseInt(timeMatch[2]);
                 const centiseconds = parseInt(timeMatch[3]);
-                const time = minutes * 60 + seconds + centiseconds / 100;
+                // Offset by 1 second
+                const time = Math.max(0, minutes * 60 + seconds + centiseconds / 100 - 1);
                 const text = line.replace(/\[.*?\]/g, '').trim();
                 return { time, text };
               }
               return null;
             })
             .filter((line: LyricsLine | null) => line !== null) as LyricsLine[];
-          
+          window.lyricsCache[cacheKey] = lines;
           setLyrics(lines);
         } else {
           // Plain lyrics - split into lines with estimated timing
@@ -251,10 +264,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             .split('\n')
             .filter((line: string) => line.trim())
             .map((line: string, index: number) => ({
-              time: index * 3, // Estimate 3 seconds per line
+              time: index * 3,
               text: line.trim()
             }));
-          
+          window.lyricsCache[cacheKey] = lines;
           setLyrics(lines);
         }
       } else {

@@ -13,23 +13,10 @@ export default function TopBar() {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <header className="bg-black bg-opacity-60 backdrop-blur-md p-4 flex items-center justify-between sticky top-0 z-50 border-b border-gray-800 border-opacity-50">
-      {/* Navigation Buttons */}
+    <header className="bg-black p-4 flex items-center justify-between sticky top-0 z-50 border-opacity-50">
+      {/* extra */}
       <div className="flex items-center space-x-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-8 h-8 bg-black bg-opacity-70 hover:bg-opacity-90 rounded-full text-white hover:text-white border-0 transition-all duration-200"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-8 h-8 bg-black bg-opacity-70 hover:bg-opacity-90 rounded-full text-white hover:text-white border-0 transition-all duration-200"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </Button>
+        {/* add here */}
       </div>
 
       {/* Search Bar */}

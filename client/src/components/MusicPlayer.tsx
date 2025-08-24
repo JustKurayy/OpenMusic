@@ -282,14 +282,14 @@ export default function MusicPlayer({ onToggleQueue }: { onToggleQueue?: () => v
             <List className="w-4 h-4" />
           </Button>
           
-          <Button 
+          {/* <Button 
             variant="ghost" 
             size="sm" 
             className="text-gray-400 hover:text-white transition-colors duration-200"
             title="Connect to a device"
           >
             <Monitor className="w-4 h-4" />
-          </Button>
+          </Button> */}
           
           <div className="flex items-center space-x-2 group">
             <Button 

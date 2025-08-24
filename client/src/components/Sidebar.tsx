@@ -20,13 +20,12 @@ export default function Sidebar() {
 
   const mainNavItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/search", label: "Search", icon: Search },
   ];
 
   return (
     <div className="flex">
       {/* Main Navigation */}
-      <aside className="w-16 lg:w-80 bg-black flex flex-col">
+      <aside className="w-16 lg:w-80 popofffront rounded-lg flex flex-col">
         {/* Top Section - Brand */}
         <div className="p-4 lg:p-6">
           <div className="flex items-center space-x-3">

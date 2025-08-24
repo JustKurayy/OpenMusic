@@ -56,6 +56,10 @@
   --ring: hsl(142, 86%, 40%);
 }
 
+.popofffront {
+  background-color: #121212;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -101,12 +105,22 @@
     color: var(--spotify-white);
   }
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  /* Modern sleek scrollbar for all scrollable areas */
+  ::-webkit-scrollbar {
+    width: 0px;
+    /* background-color: inherit; */
+    border-radius: 8px;
   }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  /* ::-webkit-scrollbar-thumb {
+    background: #1f1f1f;
+    border-radius: 8px;
+    min-height: 24px;
   }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #252525;
+  }
+  ::-webkit-scrollbar-track {
+    background: #121212;
+    border-radius: 8px;
+  } */
 }

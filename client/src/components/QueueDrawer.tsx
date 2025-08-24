@@ -1,9 +1,13 @@
 import { usePlayer } from "@/contexts/PlayerContext";
+import { ContextMenu } from "@/components/ui/ContextMenu";
+import { playlistsApi } from "@/lib/api";
+import { useEffect } from "react";
 import { X, Clock, MoreHorizontal, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 export default function QueueDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; track: any } | null>(null);
   const { queue, currentTrack, currentIndex, isPlaying, playTrack } = usePlayer();
   const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
 
@@ -21,9 +25,9 @@ export default function QueueDrawer({ isOpen, onClose }: { isOpen: boolean; onCl
   };
 
   return (
-    <aside className="h-full w-80 bg-black border-l border-gray-800 z-40 flex flex-col">
+    <aside className="h-full w-80 popofffront z-40 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-black z-10">
+      <div className="p-4 flex items-center justify-between sticky top-0 z-10">
         <h2 className="font-bold text-lg text-white">Queue</h2>
         <Button 
           variant="ghost" 
@@ -39,7 +43,7 @@ export default function QueueDrawer({ isOpen, onClose }: { isOpen: boolean; onCl
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         {/* Now Playing Section */}
         {currentTrack && (
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-4">
             <h3 className="text-sm font-semibold text-white mb-3">Now playing</h3>
             <div className="bg-gray-900 bg-opacity-60 rounded-lg p-3">
               <div className="flex items-center space-x-3">
@@ -102,6 +106,10 @@ export default function QueueDrawer({ isOpen, onClose }: { isOpen: boolean; onCl
                   onClick={() => playTrack(track, queue)}
                   onMouseEnter={() => setHoveredTrack(index)}
                   onMouseLeave={() => setHoveredTrack(null)}
+                  onContextMenu={e => {
+                    e.preventDefault();
+                    setContextMenu({ x: e.clientX, y: e.clientY, track });
+                  }}
                 >
                   {/* Track Number / Play Button */}
                   <div className="w-8 flex justify-center">
@@ -152,6 +160,25 @@ export default function QueueDrawer({ isOpen, onClose }: { isOpen: boolean; onCl
             </div>
           </div>
         )}
+      {/* Custom Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          track={contextMenu.track}
+          queue={queue}
+          onPlay={playTrack}
+          onAddToPlaylist={(playlistId, trackId) => {
+            playlistsApi.addTrack(playlistId, trackId);
+          }}
+          onDelete={trackId => {
+            import("@/lib/api").then(({ tracksApi }) => {
+              tracksApi.delete(trackId);
+            });
+          }}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
       </div>
     </aside>
   );

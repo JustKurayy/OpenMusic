@@ -1,4 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
+import { useEffect, useState } from "react";
+import { getCountryCode } from "@/lib/getCountryCode";
+import { getStationsByCountry } from "@/lib/radioBrowserApi";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useQuery } from "@tanstack/react-query";
 import { tracksApi, type ApiTrack } from "@/lib/api";
@@ -15,8 +18,59 @@ interface BentoGridProps {
 }
 
 export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; track: any } | null>(null);
+  // Refs for scrollable lists
+  const recentTracksRef = useRef<HTMLDivElement>(null);
+  const playlistsRef = useRef<HTMLDivElement>(null);
+  const radiosRef = useRef<HTMLDivElement>(null);
+  const recentlyPlayedRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user's playlists and user
   const { user } = useAuth();
+  const { data: userPlaylists = [] } = useQuery<ApiPlaylist[]>({
+    queryKey: ["/api/playlists"],
+    enabled: !!user,
+  });
+  const userPlaylistsLimited: ApiPlaylist[] = userPlaylists.slice(0, 8);
+  const recentTracks: ApiTrack[] = tracks.slice(0, 8);
+  const recentlyPlayedTracks: ApiTrack[] = tracks.slice(8, 16);
+  const [radios, setRadios] = useState<any[]>([]);
+
+  // State to track scrollability
+  const [canScrollRecent, setCanScrollRecent] = useState(false);
+  const [canScrollPlaylists, setCanScrollPlaylists] = useState(false);
+  const [canScrollRadios, setCanScrollRadios] = useState(false);
+  const [canScrollPlayed, setCanScrollPlayed] = useState(false);
+
+  // Check scrollability on mount and window resize
+  useEffect(() => {
+    function checkScroll() {
+      setCanScrollRecent(!!recentTracksRef.current && recentTracksRef.current.scrollWidth > recentTracksRef.current.clientWidth);
+      setCanScrollPlaylists(!!playlistsRef.current && playlistsRef.current.scrollWidth > playlistsRef.current.clientWidth);
+      setCanScrollRadios(!!radiosRef.current && radiosRef.current.scrollWidth > radiosRef.current.clientWidth);
+      setCanScrollPlayed(!!recentlyPlayedRef.current && recentlyPlayedRef.current.scrollWidth > recentlyPlayedRef.current.clientWidth);
+    }
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [recentTracks.length, userPlaylistsLimited.length, radios.length, recentlyPlayedTracks.length]);
+
+  // Scroll handlers
+  const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) ref.current.scrollBy({ left: -300, behavior: 'smooth' });
+  };
+  const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) ref.current.scrollBy({ left: 300, behavior: 'smooth' });
+  };
+  const { playRadio } = usePlayer();
+  const countryCode = getCountryCode();
+  const [radiosLoading, setRadiosLoading] = useState(true);
+  useEffect(() => {
+    setRadiosLoading(true);
+    getStationsByCountry(countryCode, 16)
+      .then(setRadios)
+      .finally(() => setRadiosLoading(false));
+  }, [countryCode]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; track: any } | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -41,20 +95,7 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
 
-  // Fetch user's playlists
-  const { data: userPlaylists = [] } = useQuery<ApiPlaylist[]>({
-    queryKey: ["/api/playlists"],
-    enabled: !!user,
-  });
-
-  // Get recent tracks (last 8 uploaded)
-  const recentTracks = tracks.slice(0, 8);
-  
-  // Get user's playlists (limit to 8)
-  const userPlaylistsLimited = userPlaylists.slice(0, 8);
-
-  // Get recently played tracks (simulate from tracks array)
-  const recentlyPlayedTracks = tracks.slice(8, 16);
+  // ...existing code...
 
   return (
     <div
@@ -88,18 +129,22 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Recently Uploaded</h2>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+              {canScrollRecent && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollLeft(recentTracksRef)}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+              )}
+              {canScrollRecent && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollRight(recentTracksRef)}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
                 <MoreHorizontal className="w-5 h-5" />
               </Button>
             </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
+          <div ref={recentTracksRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
             {recentTracks.map((track, index) => (
               <div
                 key={track.id}
@@ -167,18 +212,22 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Your Playlists</h2>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+              {canScrollPlaylists && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollLeft(playlistsRef)}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+              )}
+              {canScrollPlaylists && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollRight(playlistsRef)}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
                 <MoreHorizontal className="w-5 h-5" />
               </Button>
             </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
+          <div ref={playlistsRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
             {userPlaylistsLimited.map((playlist, index) => (
               <div
                 key={playlist.id}
@@ -220,23 +269,80 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
           </div>
         </section>
 
+        {/* Radios from your country - moved below playlists */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Radios from your country ({countryCode})</h2>
+          </div>
+          {radiosLoading ? (
+            <div className="text-white">Loading radios...</div>
+          ) : radios.length === 0 ? (
+            <div className="text-gray-400">No radios found for your country.</div>
+          ) : (
+            <React.Fragment>
+              <div className="flex items-center gap-2 mb-2">
+                {canScrollRadios && (
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollLeft(radiosRef)}>
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                )}
+                {canScrollRadios && (
+                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollRight(radiosRef)}>
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+              <div ref={radiosRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
+                {radios.map((radio: any, idx: number) => (
+                <div
+                  key={radio.id || radio.stationuuid}
+                  className="flex-shrink-0 w-48 bg-[#232323] rounded-lg p-4 group transition-all duration-200 hover:scale-105 relative"
+                >
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-sm text-white truncate group-hover:text-green-400 transition-colors duration-200">
+                      {radio.name}
+                    </h3>
+                    <p className="text-xs text-gray-400 truncate">
+                      {radio.country} - {Array.isArray(radio.language) ? radio.language.join(", ") : radio.language}
+                    </p>
+                    {/* Removed inline audio player. Playback is handled by MusicPlayer. */}
+                    <a href={radio.homepage} target="_blank" rel="noopener noreferrer" className="text-green-400 underline mt-2 block">Visit Station</a>
+                    <button
+                      className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 hover:bg-green-400 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-all"
+                      title="Play Radio"
+                      onClick={() => playRadio && playRadio(radio)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-black ml-0.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </React.Fragment>
+          )}
+        </section>
+
         {/* Recently Played Section */}
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Recently Played</h2>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+              {canScrollPlayed && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollLeft(recentlyPlayedRef)}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+              )}
+              {canScrollPlayed && (
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white" onClick={() => scrollRight(recentlyPlayedRef)}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="w-8 h-8 p-0 text-gray-400 hover:text-white">
                 <MoreHorizontal className="w-5 h-5" />
               </Button>
             </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
+          <div ref={recentlyPlayedRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1">
             {recentlyPlayedTracks.map((track, index) => (
               <div
                 key={track.id}

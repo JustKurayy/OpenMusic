@@ -20,6 +20,7 @@ export default function Sidebar() {
 
   const mainNavItems = [
     { href: "/", label: "Home", icon: Home },
+    { href: "/radio", label: "Radio", icon: Music },
   ];
 
   return (

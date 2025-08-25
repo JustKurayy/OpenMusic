@@ -14,6 +14,12 @@ interface LyricsLine {
 }
 
 interface PlayerContextType {
+  playRadio?: (radio: any) => void;
+  // Radio playback
+  currentRadio?: any;
+  isRadioPlaying?: boolean;
+  setCurrentRadio?: (radio: any) => void;
+  toggleRadio?: () => void;
   currentTrack: ApiTrack | null;
   isPlaying: boolean;
   currentTime: number;
@@ -39,16 +45,73 @@ interface PlayerContextType {
   removeFromQueue: (index: number) => void;
   toggleLyrics: () => void;
   fetchLyrics: (title: string, artist: string) => Promise<void>;
+  setRadioVolume?: (volume: number) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  // Set radio volume helper
+  const setRadioVolume = (volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    if (radioAudioRef.current) {
+      radioAudioRef.current.volume = clamped;
+    }
+    setVolumeState(clamped);
+  };
+  // Play radio helper
+  const playRadio = (radio: any) => {
+    setCurrentRadio(radio);
+    setIsRadioPlaying(true);
+  };
+  // Radio playback state
+  const [currentRadio, setCurrentRadio] = useState<any | null>(null);
+  const [isRadioPlaying, setIsRadioPlaying] = useState(false);
+  const radioAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Radio audio element
+  useEffect(() => {
+    if (!radioAudioRef.current) {
+      radioAudioRef.current = new Audio();
+    }
+    return () => {
+      radioAudioRef.current?.pause();
+    };
+  }, []);
+
+  // Sync radio audio element volume with context volume
+  useEffect(() => {
+    if (currentRadio && radioAudioRef.current) {
+      radioAudioRef.current.src = currentRadio.urlResolved;
+      radioAudioRef.current.load();
+      radioAudioRef.current.volume = volume;
+      if (isRadioPlaying) {
+        radioAudioRef.current.play();
+      } else {
+        radioAudioRef.current.pause();
+      }
+    } else if (radioAudioRef.current) {
+      radioAudioRef.current.pause();
+    }
+  }, [currentRadio, isRadioPlaying]);
+
+  const toggleRadio = () => {
+    if (!currentRadio) return;
+    setIsRadioPlaying(prev => {
+      if (radioAudioRef.current) {
+        if (prev) {
+          radioAudioRef.current.pause();
+        } else {
+          radioAudioRef.current.play();
+        }
+      }
+      return !prev;
+    });
+  };
   const [currentTrack, setCurrentTrack] = useState<ApiTrack | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(0.7);
+  const [volume, setVolumeState] = useState(0.2);
   const [queue, setQueue] = useState<ApiTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -114,18 +177,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = (track: ApiTrack, newQueue?: ApiTrack[]) => {
     if (!audioRef.current) return;
-    
+
+    // Stop radio playback if active
+    if (radioAudioRef.current) {
+      radioAudioRef.current.pause();
+    }
+    setCurrentRadio(null);
+    setIsRadioPlaying(false);
+
     setCurrentTrack(track);
-    
+
     if (newQueue) {
       setQueue(newQueue);
       const index = newQueue.findIndex(t => t.id === track.id);
       setCurrentIndex(index >= 0 ? index : 0);
     }
-    
+
     audioRef.current.src = tracksApi.getStreamUrl(track.id);
     audioRef.current.load();
-    
+
     audioRef.current.play().then(() => {
       setIsPlaying(true);
     }).catch((error) => {
@@ -309,6 +379,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         removeFromQueue,
         toggleLyrics,
         fetchLyrics,
+        // Radio
+        currentRadio,
+        isRadioPlaying,
+        setCurrentRadio,
+        toggleRadio,
+        playRadio,
+        setRadioVolume,
       }}
     >
       {children}

@@ -15,6 +15,7 @@ import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
+import Radio from "@/pages/Radio";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ function AppContent() {
           <Route path="/" component={Home} />
           <Route path="/library" component={Library} />
           <Route path="/upload" component={Upload} />
+          <Route path="/radio" component={Radio} />
           <Route path="/playlist/:id" component={Playlist} />
           <Route path="/search" component={SearchPage} />
           <Route path="/create-playlist" component={CreatePlaylist} />

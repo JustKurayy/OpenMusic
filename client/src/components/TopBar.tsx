@@ -12,6 +12,12 @@ export default function TopBar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  const accountMenuItems = [
+    { label: 'Profile', action: () => {} },
+    { label: 'Settings', action: () => {} },
+    { label: 'Logout', action: () => { setShowMenu(false); logout(); } },
+  ];
+
   return (
     <header className="bg-black p-4 flex items-center justify-between sticky top-0 z-50 border-opacity-50">
       {/* extra */}
@@ -70,13 +76,15 @@ export default function TopBar() {
           {/* Burger menu dropdown */}
           {showMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-black border border-gray-800 rounded-lg shadow-lg z-50 py-2">
-              <button
-                className="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors duration-200"
-                onClick={() => { setShowMenu(false); logout(); }}
-              >
-                Logout
-              </button>
-              {/* Add more actions here if needed */}
+              {accountMenuItems.map((item, index) => (
+                <button
+                  key={index}
+                  className="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors duration-200"
+                  onClick={() => { item.action(); setShowMenu(false); }}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           )}
         </div>

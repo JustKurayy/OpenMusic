@@ -63,7 +63,7 @@ export default function Library() {
   const isEmpty = tracks.length === 0 && playlists.length === 0;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-900 to-black min-h-screen">
+    <div className="flex-1 overflow-y-auto popofffront min-h-screen">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -180,7 +180,7 @@ export default function Library() {
               {shouldShowPlaylists && filteredPlaylists.length > 0 && (
                 <section>
                   {filter === 'all' && (
-                    <h2 className="text-2xl font-bold text-white mb-4">Recently Created</h2>
+                    <h2 className="text-2xl font-bold text-white mb-4">Your Playlists</h2>
                   )}
                   
                   {viewMode === 'grid' ? (
@@ -247,7 +247,7 @@ export default function Library() {
               {shouldShowTracks && filteredTracks.length > 0 && (
                 <section>
                   {filter === 'all' && playlists.length > 0 && (
-                    <h2 className="text-2xl font-bold text-white mb-4">Made for You</h2>
+                    <h2 className="text-2xl font-bold text-white mb-4">Uploaded by you</h2>
                   )}
                   
                   {viewMode === 'list' ? (

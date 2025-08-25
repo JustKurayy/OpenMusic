@@ -51,7 +51,7 @@ export default function TrackList({
   }
 
   return (
-    <ul className="bg-spotify-light-gray rounded-lg overflow-hidden divide-y divide-spotify-black divide-opacity-10">
+    <ul className="rounded-lg overflow-hidden divide-y divide-spotify-black divide-opacity-10">
       {tracks.map((track, index) => {
         const isCurrentTrack = currentTrack?.id === track.id;
         return (

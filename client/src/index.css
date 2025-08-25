@@ -60,6 +60,15 @@
   background-color: #121212;
 }
 
+.toplight {
+  background: linear-gradient(
+    to bottom,
+    #174e47 0%,
+    #121212 15%,
+    #121212 100%
+  );
+}
+
 @layer base {
   * {
     @apply border-border;

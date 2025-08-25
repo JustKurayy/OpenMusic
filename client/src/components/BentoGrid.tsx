@@ -82,40 +82,11 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
     return 'Good evening';
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (gridRef.current) {
-      const rect = gridRef.current.getBoundingClientRect();
-      setMousePosition({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  };
-
-  const handleMouseEnter = () => setIsHovering(true);
-  const handleMouseLeave = () => setIsHovering(false);
-
-  // ...existing code...
-
   return (
     <div
       ref={gridRef}
-      className="relative p-6 min-h-screen popofffront"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className="relative p-6 min-h-screen popofffront toplight"
     >
-      {/* Animated background lighting effect */}
-      <div
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-300 ${
-          isHovering ? 'opacity-100' : 'opacity-0'
-        }`}
-        style={{
-          background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(120, 119, 198, 0.15), transparent 40%)`,
-        }}
-      />
-      
-      {/* Content */}
       <div className="relative z-10 space-y-8">
         {/* Greeting */}
         <div className="pt-4">

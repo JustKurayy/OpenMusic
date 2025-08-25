@@ -8,7 +8,7 @@ interface LyricsLine {
 }
 
 export default function Lyrics() {
-    const { currentTrack, currentTime, lyrics, lyricsLoading, lyricsError } = usePlayer();
+    const { currentTrack, currentTime, lyrics, lyricsLoading, lyricsError, seekTo } = usePlayer();
     const [backgroundColor, setBackgroundColor] = useState<string>('');
     const [currentLineIndex, setCurrentLineIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -132,13 +132,10 @@ export default function Lyrics() {
                                 e.currentTarget.style.textDecoration = '';
                                 e.currentTarget.style.color = 'rgba(255,255,255,' + (index === currentLineIndex ? '1' : '0.7') + ')';
                             }}
-                            onClick={() => {
+                            onClick={e => {
                                 if (currentTrack && line.time !== undefined) {
                                     // Seek to the time of the clicked line
-                                    const audio = document.querySelector('audio');
-                                    if (audio) {
-                                        audio.currentTime = line.time;
-                                    }
+                                    seekTo(line.time);
                                 }
                             }}
                         >

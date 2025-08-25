@@ -197,13 +197,13 @@ export default function Upload() {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-900 to-black min-h-screen">
+        <div className="flex-1 overflow-y-auto p-6 popofffront toplight min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-spotify-white">
                 Upload Your Music
             </h1>
 
             {/* Upload Area */}
-            <Card className="mb-8 bg-spotify-light-gray border-spotify-light-gray">
+            <Card className="mb-8">
                 <CardContent className="p-8">
                     <div
                         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 ${

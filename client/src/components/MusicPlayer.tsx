@@ -277,7 +277,7 @@ export default function MusicPlayer({
                             </button>
                         )}
                     </div>
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsLiked(!isLiked)}
@@ -287,7 +287,7 @@ export default function MusicPlayer({
                         <Heart
                             className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
                         />
-                    </Button>
+                    </Button> */}
                 </div>
 
                 {/* Player Controls */}

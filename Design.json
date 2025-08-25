@@ -1,306 +1,303 @@
 {
-  "designSystem": {
-    "name": "Spotify-like Music Interface",
-    "version": "1.0",
-    "description": "Dark theme music streaming interface with grid-based content layout"
-  },
-  "colorPalette": {
-    "background": {
-      "primary": "#121212",
-      "secondary": "#1a1a1a",
-      "elevated": "#242424"
+    "designSystem": {
+        "name": "Spotify-like Music Interface",
+        "version": "1.0",
+        "description": "Dark theme music streaming interface with grid-based content layout"
     },
-    "surface": {
-      "card": "#181818",
-      "hover": "#282828",
-      "selected": "#1db954"
-    },
-    "text": {
-      "primary": "#ffffff",
-      "secondary": "#b3b3b3",
-      "muted": "#6a6a6a",
-      "accent": "#1db954"
-    },
-    "accent": {
-      "primary": "#1db954",
-      "hover": "#1ed760"
-    }
-  },
-  "typography": {
-    "fontFamily": "system-ui, -apple-system, sans-serif",
-    "scales": {
-      "heading1": {
-        "fontSize": "32px",
-        "fontWeight": 900,
-        "lineHeight": "1.2"
-      },
-      "heading2": {
-        "fontSize": "24px",
-        "fontWeight": 700,
-        "lineHeight": "1.3"
-      },
-      "heading3": {
-        "fontSize": "18px",
-        "fontWeight": 700,
-        "lineHeight": "1.4"
-      },
-      "body": {
-        "fontSize": "14px",
-        "fontWeight": 400,
-        "lineHeight": "1.4"
-      },
-      "caption": {
-        "fontSize": "12px",
-        "fontWeight": 400,
-        "lineHeight": "1.3"
-      }
-    }
-  },
-  "spacing": {
-    "unit": 8,
-    "scale": {
-      "xs": "4px",
-      "sm": "8px",
-      "md": "16px",
-      "lg": "24px",
-      "xl": "32px",
-      "xxl": "48px"
-    }
-  },
-  "borderRadius": {
-    "none": "0px",
-    "sm": "4px",
-    "md": "8px",
-    "lg": "12px",
-    "full": "50%"
-  },
-  "layout": {
-    "structure": {
-      "sidebar": {
-        "width": "240px",
-        "background": "background.secondary",
-        "padding": "spacing.lg"
-      },
-      "mainContent": {
-        "padding": "spacing.lg",
-        "maxWidth": "none",
-        "background": "background.primary"
-      },
-      "rightPanel": {
-        "width": "280px",
-        "background": "background.secondary",
-        "padding": "spacing.lg"
-      }
-    },
-    "grid": {
-      "columns": {
-        "mobile": 2,
-        "tablet": 3,
-        "desktop": 5,
-        "wide": 6
-      },
-      "gap": "spacing.lg"
-    }
-  },
-  "components": {
-    "navigationBar": {
-      "height": "64px",
-      "background": "background.primary",
-      "borderBottom": "1px solid #282828",
-      "items": {
-        "logo": {
-          "size": "32px",
-          "position": "left"
+    "colorPalette": {
+        "background": {
+            "primary": "#121212",
+            "secondary": "#1a1a1a",
+            "elevated": "#242424"
         },
-        "searchBar": {
-          "width": "364px",
-          "height": "40px",
-          "borderRadius": "borderRadius.full",
-          "background": "surface.card",
-          "position": "center"
+        "surface": {
+            "card": "#181818",
+            "hover": "#282828",
+            "selected": "#1db954"
         },
-        "userActions": {
-          "position": "right",
-          "gap": "spacing.sm"
+        "text": {
+            "primary": "#ffffff",
+            "secondary": "#b3b3b3",
+            "muted": "#6a6a6a",
+            "accent": "#1db954"
+        },
+        "accent": {
+            "primary": "#1db954",
+            "hover": "#1ed760"
         }
-      }
     },
-    "sidebar": {
-      "sections": [
-        {
-          "type": "library",
-          "items": ["playlists", "filters"]
-        },
-        {
-          "type": "recentlyPlayed",
-          "scrollable": true
+    "typography": {
+        "fontFamily": "system-ui, -apple-system, sans-serif",
+        "scales": {
+            "heading1": {
+                "fontSize": "32px",
+                "fontWeight": 900,
+                "lineHeight": "1.2"
+            },
+            "heading2": {
+                "fontSize": "24px",
+                "fontWeight": 700,
+                "lineHeight": "1.3"
+            },
+            "heading3": {
+                "fontSize": "18px",
+                "fontWeight": 700,
+                "lineHeight": "1.4"
+            },
+            "body": {
+                "fontSize": "14px",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+            },
+            "caption": {
+                "fontSize": "12px",
+                "fontWeight": 400,
+                "lineHeight": "1.3"
+            }
         }
-      ],
-      "playlistItem": {
-        "height": "56px",
-        "borderRadius": "borderRadius.sm",
-        "padding": "spacing.sm",
-        "hoverBackground": "surface.hover"
-      }
     },
-    "contentCard": {
-      "variants": {
-        "square": {
-          "aspectRatio": "1:1",
-          "borderRadius": "borderRadius.md"
-        },
-        "rectangular": {
-          "aspectRatio": "16:9",
-          "borderRadius": "borderRadius.md"
+    "spacing": {
+        "unit": 8,
+        "scale": {
+            "xs": "4px",
+            "sm": "8px",
+            "md": "16px",
+            "lg": "24px",
+            "xl": "32px",
+            "xxl": "48px"
         }
-      },
-      "coverImage": {
-        "borderRadius": "borderRadius.sm",
-        "boxShadow": "0 8px 24px rgba(0,0,0,0.5)"
-      },
-      "content": {
-        "padding": "spacing.md",
-        "gap": "spacing.xs"
-      },
-      "playButton": {
-        "size": "48px",
-        "position": "bottom-right",
-        "offset": "spacing.md",
-        "background": "accent.primary",
-        "borderRadius": "borderRadius.full",
-        "opacity": 0,
-        "hoverOpacity": 1,
-        "transition": "0.3s ease"
-      }
     },
-    "sectionHeader": {
-      "marginBottom": "spacing.lg",
-      "alignment": "space-between",
-      "showAllLink": {
-        "color": "text.secondary",
-        "fontSize": "typography.scales.caption.fontSize",
-        "fontWeight": 700,
-        "textTransform": "uppercase",
-        "letterSpacing": "0.1em"
-      }
+    "borderRadius": {
+        "none": "0px",
+        "sm": "4px",
+        "md": "8px",
+        "lg": "12px",
+        "full": "50%"
     },
-    "mediaPlayer": {
-      "height": "90px",
-      "background": "background.elevated",
-      "position": "fixed-bottom",
-      "sections": {
-        "nowPlaying": {
-          "width": "30%",
-          "albumArt": {
-            "size": "56px",
-            "borderRadius": "borderRadius.sm"
-          }
+    "layout": {
+        "structure": {
+            "sidebar": {
+                "width": "240px",
+                "background": "background.secondary",
+                "padding": "spacing.lg"
+            },
+            "mainContent": {
+                "padding": "spacing.lg",
+                "maxWidth": "none",
+                "background": "background.primary"
+            },
+            "rightPanel": {
+                "width": "280px",
+                "background": "background.secondary",
+                "padding": "spacing.lg"
+            }
         },
-        "controls": {
-          "width": "40%",
-          "centerAligned": true
-        },
-        "volume": {
-          "width": "30%",
-          "rightAligned": true
+        "grid": {
+            "columns": {
+                "mobile": 2,
+                "tablet": 3,
+                "desktop": 5,
+                "wide": 6
+            },
+            "gap": "spacing.lg"
         }
-      }
     },
-    "rightSidebar": {
-      "sections": [
-        {
-          "type": "queue",
-          "title": "Queue"
+    "components": {
+        "navigationBar": {
+            "height": "64px",
+            "background": "background.primary",
+            "borderBottom": "1px solid #282828",
+            "items": {
+                "logo": {
+                    "size": "32px",
+                    "position": "left"
+                },
+                "searchBar": {
+                    "width": "364px",
+                    "height": "40px",
+                    "borderRadius": "borderRadius.full",
+                    "background": "surface.card",
+                    "position": "center"
+                },
+                "userActions": {
+                    "position": "right",
+                    "gap": "spacing.sm"
+                }
+            }
         },
-        {
-          "type": "nowPlaying",
-          "albumArt": {
-            "size": "100%",
-            "borderRadius": "borderRadius.md"
-          }
+        "sidebar": {
+            "sections": [
+                {
+                    "type": "library",
+                    "items": ["playlists", "filters"]
+                },
+                {
+                    "type": "recentlyPlayed",
+                    "scrollable": true
+                }
+            ],
+            "playlistItem": {
+                "height": "56px",
+                "borderRadius": "borderRadius.sm",
+                "padding": "spacing.sm",
+                "hoverBackground": "surface.hover"
+            }
         },
-        {
-          "type": "upNext",
-          "scrollable": true
+        "contentCard": {
+            "variants": {
+                "square": {
+                    "aspectRatio": "1:1",
+                    "borderRadius": "borderRadius.md"
+                },
+                "rectangular": {
+                    "aspectRatio": "16:9",
+                    "borderRadius": "borderRadius.md"
+                }
+            },
+            "coverImage": {
+                "borderRadius": "borderRadius.sm",
+                "boxShadow": "0 8px 24px rgba(0,0,0,0.5)"
+            },
+            "content": {
+                "padding": "spacing.md",
+                "gap": "spacing.xs"
+            },
+            "playButton": {
+                "size": "48px",
+                "position": "bottom-right",
+                "offset": "spacing.md",
+                "background": "accent.primary",
+                "borderRadius": "borderRadius.full",
+                "opacity": 0,
+                "hoverOpacity": 1,
+                "transition": "0.3s ease"
+            }
+        },
+        "sectionHeader": {
+            "marginBottom": "spacing.lg",
+            "alignment": "space-between",
+            "showAllLink": {
+                "color": "text.secondary",
+                "fontSize": "typography.scales.caption.fontSize",
+                "fontWeight": 700,
+                "textTransform": "uppercase",
+                "letterSpacing": "0.1em"
+            }
+        },
+        "mediaPlayer": {
+            "height": "90px",
+            "background": "background.elevated",
+            "position": "fixed-bottom",
+            "sections": {
+                "nowPlaying": {
+                    "width": "30%",
+                    "albumArt": {
+                        "size": "56px",
+                        "borderRadius": "borderRadius.sm"
+                    }
+                },
+                "controls": {
+                    "width": "40%",
+                    "centerAligned": true
+                },
+                "volume": {
+                    "width": "30%",
+                    "rightAligned": true
+                }
+            }
+        },
+        "rightSidebar": {
+            "sections": [
+                {
+                    "type": "queue",
+                    "title": "Queue"
+                },
+                {
+                    "type": "nowPlaying",
+                    "albumArt": {
+                        "size": "100%",
+                        "borderRadius": "borderRadius.md"
+                    }
+                },
+                {
+                    "type": "upNext",
+                    "scrollable": true
+                }
+            ]
         }
-      ]
+    },
+    "interactions": {
+        "hover": {
+            "cards": {
+                "transform": "scale(1.02)",
+                "transition": "transform 0.3s ease",
+                "showPlayButton": true
+            },
+            "buttons": {
+                "backgroundOpacity": 0.1,
+                "transition": "all 0.2s ease"
+            }
+        },
+        "focus": {
+            "outline": "2px solid accent.primary",
+            "outlineOffset": "2px"
+        }
+    },
+    "iconography": {
+        "style": "outline",
+        "weight": "regular",
+        "size": {
+            "sm": "16px",
+            "md": "20px",
+            "lg": "24px",
+            "xl": "32px"
+        }
+    },
+    "patterns": {
+        "contentGrid": {
+            "description": "Responsive grid for content cards",
+            "implementation": "CSS Grid with auto-fit minmax columns",
+            "minCardWidth": "180px",
+            "maxCardWidth": "220px"
+        },
+        "sectionLayout": {
+            "description": "Consistent section with header and content grid",
+            "structure": ["section-header", "content-grid"]
+        },
+        "cardHover": {
+            "description": "Consistent hover state for all interactive cards",
+            "effects": [
+                "subtle-scale",
+                "show-play-button",
+                "background-brighten"
+            ]
+        },
+        "verticalRhythm": {
+            "description": "Consistent vertical spacing between sections",
+            "sectionGap": "spacing.xxl",
+            "elementGap": "spacing.lg"
+        }
+    },
+    "accessibility": {
+        "colorContrast": {
+            "minimum": "4.5:1",
+            "enhanced": "7:1"
+        },
+        "focusManagement": {
+            "visibleFocusIndicators": true,
+            "logicalTabOrder": true
+        },
+        "semanticHTML": {
+            "landmarks": true,
+            "headingHierarchy": true,
+            "altText": "required"
+        }
+    },
+    "responsiveBreakpoints": {
+        "mobile": "320px",
+        "tablet": "768px",
+        "desktop": "1024px",
+        "wide": "1440px",
+        "ultrawide": "1920px"
     }
-  },
-  "interactions": {
-    "hover": {
-      "cards": {
-        "transform": "scale(1.02)",
-        "transition": "transform 0.3s ease",
-        "showPlayButton": true
-      },
-      "buttons": {
-        "backgroundOpacity": 0.1,
-        "transition": "all 0.2s ease"
-      }
-    },
-    "focus": {
-      "outline": "2px solid accent.primary",
-      "outlineOffset": "2px"
-    }
-  },
-  "iconography": {
-    "style": "outline",
-    "weight": "regular",
-    "size": {
-      "sm": "16px",
-      "md": "20px",
-      "lg": "24px",
-      "xl": "32px"
-    }
-  },
-  "patterns": {
-    "contentGrid": {
-      "description": "Responsive grid for content cards",
-      "implementation": "CSS Grid with auto-fit minmax columns",
-      "minCardWidth": "180px",
-      "maxCardWidth": "220px"
-    },
-    "sectionLayout": {
-      "description": "Consistent section with header and content grid",
-      "structure": [
-        "section-header",
-        "content-grid"
-      ]
-    },
-    "cardHover": {
-      "description": "Consistent hover state for all interactive cards",
-      "effects": [
-        "subtle-scale",
-        "show-play-button",
-        "background-brighten"
-      ]
-    },
-    "verticalRhythm": {
-      "description": "Consistent vertical spacing between sections",
-      "sectionGap": "spacing.xxl",
-      "elementGap": "spacing.lg"
-    }
-  },
-  "accessibility": {
-    "colorContrast": {
-      "minimum": "4.5:1",
-      "enhanced": "7:1"
-    },
-    "focusManagement": {
-      "visibleFocusIndicators": true,
-      "logicalTabOrder": true
-    },
-    "semanticHTML": {
-      "landmarks": true,
-      "headingHierarchy": true,
-      "altText": "required"
-    }
-  },
-  "responsiveBreakpoints": {
-    "mobile": "320px",
-    "tablet": "768px",
-    "desktop": "1024px",
-    "wide": "1440px",
-    "ultrawide": "1920px"
-  }
 }

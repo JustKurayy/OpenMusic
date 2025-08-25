@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Loader2, Music } from "lucide-react";
 
@@ -8,8 +8,15 @@ interface LyricsLine {
 }
 
 export default function Lyrics() {
-    const { currentTrack, currentTime, lyrics, lyricsLoading, lyricsError, seekTo } = usePlayer();
-    const [backgroundColor, setBackgroundColor] = useState<string>('');
+    const {
+        currentTrack,
+        currentTime,
+        lyrics,
+        lyricsLoading,
+        lyricsError,
+        seekTo,
+    } = usePlayer();
+    const [backgroundColor, setBackgroundColor] = useState<string>("");
     const [currentLineIndex, setCurrentLineIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const currentLineRef = useRef<HTMLDivElement>(null);
@@ -58,7 +65,7 @@ export default function Lyrics() {
 
             container.scrollTo({
                 top: scrollTop,
-                behavior: 'smooth'
+                behavior: "smooth",
             });
         }
     }, [currentLineIndex]);
@@ -69,7 +76,9 @@ export default function Lyrics() {
                 <div className="text-center text-gray-400">
                     <Music className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg">No track playing</p>
-                    <p className="text-sm">Start playing a song to see lyrics</p>
+                    <p className="text-sm">
+                        Start playing a song to see lyrics
+                    </p>
                 </div>
             </div>
         );
@@ -115,24 +124,35 @@ export default function Lyrics() {
                     {lyrics.map((line, index) => (
                         <div
                             key={index}
-                            ref={index === currentLineIndex ? currentLineRef : null}
+                            ref={
+                                index === currentLineIndex
+                                    ? currentLineRef
+                                    : null
+                            }
                             className="transition-all duration-200 cursor-pointer select-none font-bold text-3xl md:text-4xl lg:text-5xl"
                             style={{
-                                fontFamily: 'Inter, sans-serif',
-                                textAlign: 'left',
-                                paddingLeft: '0.5rem',
-                                borderRadius: '0.375rem',
-                                color: 'rgba(255,255,255,' + (index === currentLineIndex ? '1' : '0.7') + ')',
+                                fontFamily: "Inter, sans-serif",
+                                textAlign: "left",
+                                paddingLeft: "0.5rem",
+                                borderRadius: "0.375rem",
+                                color:
+                                    "rgba(255,255,255," +
+                                    (index === currentLineIndex ? "1" : "0.7") +
+                                    ")",
                             }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.textDecoration = 'underline';
-                                e.currentTarget.style.color = 'white';
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.textDecoration =
+                                    "underline";
+                                e.currentTarget.style.color = "white";
                             }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.textDecoration = '';
-                                e.currentTarget.style.color = 'rgba(255,255,255,' + (index === currentLineIndex ? '1' : '0.7') + ')';
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.textDecoration = "";
+                                e.currentTarget.style.color =
+                                    "rgba(255,255,255," +
+                                    (index === currentLineIndex ? "1" : "0.7") +
+                                    ")";
                             }}
-                            onClick={e => {
+                            onClick={(e) => {
                                 if (currentTrack && line.time !== undefined) {
                                     // Seek to the time of the clicked line
                                     seekTo(line.time);
@@ -142,11 +162,15 @@ export default function Lyrics() {
                             {line.text}
                         </div>
                     ))}
-                    <p style={{
-                        paddingLeft: '0.5rem',
-                        borderRadius: '0.375rem',
-                        color: 'rgba(255,255,255)',
-                    }}>Lyrics provided by LRCLib</p>
+                    <p
+                        style={{
+                            paddingLeft: "0.5rem",
+                            borderRadius: "0.375rem",
+                            color: "rgba(255,255,255)",
+                        }}
+                    >
+                        Lyrics provided by LRCLib
+                    </p>
                 </div>
                 {/* Spacer at the bottom for better scrolling */}
                 <div className="h-32"></div>

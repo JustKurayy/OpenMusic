@@ -11,13 +11,13 @@ A self-hosted alternative to SoundCloud or Spotify — privately host and stream
 ## What is OpenMusic?
 
 OpenMusic empowers you to **self-host** your personal music library in a sleek, web-based interface.  
-Upload, stream, and manage your own music collection with **full privacy** and **no reliance on third-party services**.
+Upload, stream, and manage your own music collection with **full privacy**.
 
 ---
 
 ## !Warning!
 
-This application is mostly vibe-coded with copilot & claude (for frontend). Needs a lot of fixing to be used properly.
+This application is mostly vibe-coded with copilot. Needs a few security updates before proper use.
 
 ---
 
@@ -25,23 +25,22 @@ This application is mostly vibe-coded with copilot & claude (for frontend). Need
 
 - **🔒 Secure Access**  
   - Google OAuth2 authentication via Passport.js with JWT sessions  
-  - Optional “Guest Mode” for casual listening
+  - “Guest Mode” when no OAuth provider is given
 
 - **📂 Private Libraries**  
   - Organize music by user  
   - MP3/WAV uploads with automatic metadata extraction
 
 - **🎵 Audio Streaming**  
-  - Stream directly via HTML5 Audio API  
-  - Full playback controls, queue management, and progress tracking
+  - Stream directly via Audio API  
+  - Full playback controls, queue management, and lyrics tracking with LRCLib API
 
 - **📜 Playlist Management**  
   - Create, edit, delete playlists  
   - Add/remove tracks and reorder them
 
 - **🎨 Spotify-Inspired UI**  
-  - Dark theme, green accent highlights  
-  - Fully responsive design
+  - Based on the August 2025 design of spotify web
 
 ---
 

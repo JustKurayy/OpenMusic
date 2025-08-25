@@ -31,10 +31,6 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
             },
             async (accessToken, refreshToken, profile, done) => {
                 try {
-                    console.log(
-                        "[GOOGLE OAUTH PROFILE]",
-                        JSON.stringify(profile, null, 2)
-                    );
                     const googleId = profile.id;
                     const email = profile.emails?.[0]?.value;
                     const name = profile.displayName;

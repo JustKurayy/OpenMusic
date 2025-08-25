@@ -50,11 +50,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Auth status endpoint
     app.get("/api/auth/status", (req, res) => {
-        console.log("[DEBUG] /api/auth/status:", {
-            GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-            isGoogleOAuthConfigured,
-        });
         res.json({
             googleOAuthConfigured: isGoogleOAuthConfigured,
             guestModeAvailable: !isGoogleOAuthConfigured,
@@ -471,7 +466,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get("/api/lyrics", authenticateUserOrGuest, async (req, res) => {
         try {
             const { title, artist } = req.query;
-            console.log("[DEBUG] /api/lyrics:", { title, artist });
 
             if (!title || !artist) {
                 return res
@@ -489,7 +483,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 },
             });
             if (!searchResponse.ok) {
-                console.log("bad response from lrclib");
                 return res.status(404).json({ message: "Lyrics not found" });
             }
 
@@ -500,7 +493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ? searchResults
                 : searchResults.data;
             if (!results || results.length === 0) {
-                console.log("no results from lrclib");
                 return res.status(404).json({ message: "Lyrics not found" });
             }
 
@@ -520,7 +512,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     normalize(item.artistName) === artistNorm
             );
             if (!match) {
-                console.log("no matching track in lrclib results");
                 return res.status(404).json({ message: "Lyrics not found" });
             }
 
@@ -533,7 +524,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 },
             });
             if (!lyricsResponse.ok) {
-                console.log("bad response when fetching lyrics from lrclib");
                 return res.status(404).json({ message: "Lyrics not found" });
             }
 
@@ -544,7 +534,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 source: "LRClib",
             });
         } catch (error) {
-            console.error("Error fetching lyrics:", error);
             res.status(500).json({ message: "Failed to fetch lyrics" });
         }
     });

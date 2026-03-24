@@ -18,10 +18,113 @@ import {
 } from "@shared/schema";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { resolveUploadPath } from "./upload";
+
+type RateLimitEntry = {
+    count: number;
+    resetAt: number;
+};
+
+function createRateLimitMiddleware(
+    limit: number,
+    windowMs: number,
+    message = "Too many requests"
+) {
+    const entries = new Map<string, RateLimitEntry>();
+
+    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        const key = `${req.ip}:${req.path}`;
+        const now = Date.now();
+        const existing = entries.get(key);
+
+        if (!existing || now > existing.resetAt) {
+            entries.set(key, { count: 1, resetAt: now + windowMs });
+            return next();
+        }
+
+        if (existing.count >= limit) {
+            const retryAfterSeconds = Math.ceil((existing.resetAt - now) / 1000);
+            res.set("Retry-After", retryAfterSeconds.toString());
+            return res.status(429).json({ message });
+        }
+
+        existing.count += 1;
+        return next();
+    };
+}
+
+function csrfProtection(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+) {
+    const csrfMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+    const csrfCookieName = "csrf_token";
+    const csrfHeader = "x-csrf-token";
+
+    if (!req.cookies[csrfCookieName]) {
+        res.cookie(csrfCookieName, crypto.randomBytes(32).toString("hex"), {
+            httpOnly: false,
+            sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 24 * 60 * 60 * 1000,
+            path: "/",
+        });
+    }
+
+    if (!csrfMethods.has(req.method)) {
+        return next();
+    }
+
+    const cookieToken = req.cookies[csrfCookieName];
+    const headerToken = req.get(csrfHeader);
+    if (cookieToken && headerToken && cookieToken === headerToken) {
+        return next();
+    }
+
+    const trustedOrigins = new Set<string>([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+    ]);
+    if (process.env.FRONTEND_URL) {
+        trustedOrigins.add(process.env.FRONTEND_URL);
+    }
+
+    const requestOrigin = req.get("origin");
+    const requestReferer = req.get("referer");
+    const hostOrigin = `${req.protocol}://${req.get("host")}`;
+
+    const isTrustedOrigin =
+        (requestOrigin && trustedOrigins.has(requestOrigin)) ||
+        (requestReferer &&
+            [...trustedOrigins].some((trusted) =>
+                requestReferer.startsWith(trusted)
+            )) ||
+        (requestOrigin && requestOrigin === hostOrigin);
+
+    if (isTrustedOrigin) {
+        return next();
+    }
+
+    return res.status(403).json({ message: "Invalid CSRF token" });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+    const sessionSecret =
+        process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+    const cookieSecret =
+        process.env.COOKIE_SECRET || crypto.randomBytes(32).toString("hex");
+    const apiLimiter = createRateLimitMiddleware(
+        120,
+        60 * 1000,
+        "Rate limit exceeded"
+    );
+
     app.use(
         cors({
             origin: "http://localhost:5173", // Change to your frontend URL if needed
@@ -29,12 +132,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
     );
 
-    app.use(cookieParser());
+    app.use(cookieParser(cookieSecret));
+    app.use("/api", apiLimiter);
+    app.use(csrfProtection);
 
     // Session configuration
     app.use(
         session({
-            secret: process.env.SESSION_SECRET || "fallback_session_secret",
+            secret: sessionSecret,
             resave: false,
             saveUninitialized: false,
             cookie: {
@@ -71,6 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For local dev, use lax/false; for prod, use none/true
         res.cookie("token", token, {
             httpOnly: true,
+            signed: true,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             secure: process.env.NODE_ENV === "production",
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -101,6 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const token = generateToken(user);
                     res.cookie("token", token, {
                         httpOnly: true,
+                        signed: true,
                         sameSite:
                             process.env.NODE_ENV === "production"
                                 ? "none"
@@ -124,6 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.clearCookie("token", {
                 path: "/",
                 httpOnly: true,
+                signed: true,
                 sameSite:
                     process.env.NODE_ENV === "production" ? "none" : "lax",
                 secure: process.env.NODE_ENV === "production",
@@ -243,8 +351,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!deleted) {
                 return res.status(404).json({ message: "Track not found" });
             }
-            if (fs.existsSync(track.filePath)) {
-                fs.unlinkSync(track.filePath);
+            const safePath = resolveUploadPath(track.filePath);
+            if (safePath && fs.existsSync(safePath)) {
+                fs.unlinkSync(safePath);
             }
             res.json({ message: "Track deleted successfully" });
         } catch (error) {

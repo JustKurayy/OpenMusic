@@ -11,25 +11,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const { showLyrics } = usePlayer();
 
     return (
-        <div className="flex flex-col h-screen bg-black text-spotify-white overflow-hidden">
-            {/* TopBar spans the full width at the top */}
+        <div className="spotify-shell flex h-screen flex-col overflow-hidden p-2">
             <TopBar />
-            <div className="flex flex-1 min-h-0 min-w-0 relative gap-2 px-2">
-                {/* Sidebar on the left */}
+            <div className="flex min-h-0 flex-1 gap-2">
                 <Sidebar />
-                {/* Main content in the center */}
-                <main className="flex-1 overflow-y-auto max-w-full w-full mx-auto rounded-lg">
+                <main className="spotify-panel spotify-main-gradient min-h-0 flex-1 overflow-y-auto">
                     {showLyrics ? <Lyrics /> : children}
                 </main>
-                {/* QueueDrawer on the right */}
-                <div className="rounded-lg overflow-hidden">
-                    <QueueDrawer
-                        isOpen={queueOpen}
-                        onClose={() => setQueueOpen(false)}
-                    />
-                </div>
+                <QueueDrawer
+                    isOpen={queueOpen}
+                    onClose={() => setQueueOpen(false)}
+                />
             </div>
-            {/* MusicPlayer spans the full width at the bottom */}
             <MusicPlayer onToggleQueue={() => setQueueOpen((open) => !open)} />
         </div>
     );

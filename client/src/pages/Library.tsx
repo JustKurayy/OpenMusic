@@ -85,7 +85,7 @@ export default function Library() {
     const isEmpty = tracks.length === 0 && playlists.length === 0;
 
     return (
-        <div className="flex-1 overflow-y-auto popofffront min-h-screen">
+        <div className="spotify-main-gradient min-h-screen flex-1 overflow-y-auto">
             <div className="p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">

@@ -3,17 +3,17 @@
 @tailwind utilities;
 
 :root {
-    --background: hsl(0, 0%, 7%);
+    --background: hsl(0, 0%, 3%);
     --foreground: hsl(0, 0%, 98%);
-    --muted: hsl(0, 0%, 17%);
-    --muted-foreground: hsl(0, 0%, 70%);
-    --popover: hsl(0, 0%, 11%);
+    --muted: hsl(0, 0%, 14%);
+    --muted-foreground: hsl(0, 0%, 67%);
+    --popover: hsl(0, 0%, 7%);
     --popover-foreground: hsl(0, 0%, 98%);
-    --card: hsl(0, 0%, 11%);
+    --card: hsl(0, 0%, 10%);
     --card-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 17%);
-    --input: hsl(0, 0%, 17%);
-    --primary: hsl(142, 86%, 40%);
+    --border: hsl(0, 0%, 18%);
+    --input: hsl(0, 0%, 18%);
+    --primary: hsl(141, 73%, 42%);
     --primary-foreground: hsl(0, 0%, 0%);
     --secondary: hsl(0, 0%, 17%);
     --secondary-foreground: hsl(0, 0%, 98%);
@@ -21,31 +21,32 @@
     --accent-foreground: hsl(0, 0%, 98%);
     --destructive: hsl(0, 84.2%, 60.2%);
     --destructive-foreground: hsl(60, 9.1%, 97.8%);
-    --ring: hsl(142, 86%, 40%);
+    --ring: hsl(141, 73%, 42%);
     --radius: 0.5rem;
 
-    /* Spotify-specific colors */
-    --spotify-green: hsl(142, 86%, 40%);
-    --spotify-green-hover: hsl(142, 86%, 45%);
-    --spotify-black: hsl(0, 0%, 7%);
+    --spotify-green: hsl(141, 73%, 42%);
+    --spotify-green-hover: hsl(141, 72%, 47%);
+    --spotify-black: hsl(0, 0%, 3%);
+    --spotify-panel: hsl(0, 0%, 9%);
+    --spotify-panel-hover: hsl(0, 0%, 13%);
     --spotify-gray: hsl(0, 0%, 11%);
     --spotify-light-gray: hsl(0, 0%, 17%);
-    --spotify-text: hsl(0, 0%, 70%);
+    --spotify-text: hsl(0, 0%, 67%);
     --spotify-white: hsl(0, 0%, 98%);
 }
 
 .dark {
-    --background: hsl(0, 0%, 7%);
+    --background: hsl(0, 0%, 3%);
     --foreground: hsl(0, 0%, 98%);
-    --muted: hsl(0, 0%, 17%);
-    --muted-foreground: hsl(0, 0%, 70%);
-    --popover: hsl(0, 0%, 11%);
+    --muted: hsl(0, 0%, 14%);
+    --muted-foreground: hsl(0, 0%, 67%);
+    --popover: hsl(0, 0%, 7%);
     --popover-foreground: hsl(0, 0%, 98%);
-    --card: hsl(0, 0%, 11%);
+    --card: hsl(0, 0%, 10%);
     --card-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 17%);
-    --input: hsl(0, 0%, 17%);
-    --primary: hsl(142, 86%, 40%);
+    --border: hsl(0, 0%, 18%);
+    --input: hsl(0, 0%, 18%);
+    --primary: hsl(141, 73%, 42%);
     --primary-foreground: hsl(0, 0%, 0%);
     --secondary: hsl(0, 0%, 17%);
     --secondary-foreground: hsl(0, 0%, 98%);
@@ -53,20 +54,15 @@
     --accent-foreground: hsl(0, 0%, 98%);
     --destructive: hsl(0, 62.8%, 30.6%);
     --destructive-foreground: hsl(0, 0%, 98%);
-    --ring: hsl(142, 86%, 40%);
+    --ring: hsl(141, 73%, 42%);
 }
 
 .popofffront {
-    background-color: #121212;
+    background-color: var(--spotify-panel);
 }
 
 .toplight {
-    background: linear-gradient(
-        to bottom,
-        #174e47 0%,
-        #121212 15%,
-        #121212 100%
-    );
+    background: linear-gradient(180deg, #1f1f1f 0%, #121212 18%, #121212 100%);
 }
 
 @layer base {
@@ -78,6 +74,39 @@
         @apply font-sans antialiased bg-background text-foreground overflow-hidden;
         background-color: var(--spotify-black);
         color: var(--spotify-white);
+    }
+}
+
+@layer components {
+    .spotify-shell {
+        @apply bg-black text-spotify-white;
+    }
+
+    .spotify-panel {
+        background-color: var(--spotify-panel);
+        border: 1px solid transparent;
+        @apply rounded-lg;
+    }
+
+    .spotify-panel:hover {
+        background-color: var(--spotify-panel-hover);
+    }
+
+    .spotify-nav-item {
+        @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-gray-400 transition-colors duration-200 hover:text-white;
+    }
+
+    .spotify-nav-item-active {
+        @apply bg-white/10 text-white;
+    }
+
+    .spotify-main-gradient {
+        background: linear-gradient(
+            180deg,
+            #1f1f1f 0%,
+            #121212 18%,
+            #121212 100%
+        );
     }
 }
 
@@ -102,8 +131,12 @@
         background-color: var(--spotify-gray);
     }
 
-    .bg-spotify-light-gray {
-        background-color: var(--spotify-light-gray);
+    .bg-spotify-panel {
+        background-color: var(--spotify-panel);
+    }
+
+    .bg-spotify-panel-hover {
+        background-color: var(--spotify-panel-hover);
     }
 
     .text-spotify-text {
@@ -114,22 +147,7 @@
         color: var(--spotify-white);
     }
 
-    /* Modern sleek scrollbar for all scrollable areas */
     ::-webkit-scrollbar {
-        width: 0px;
-        /* background-color: inherit; */
-        border-radius: 8px;
+        width: 0;
     }
-    /* ::-webkit-scrollbar-thumb {
-    background: #1f1f1f;
-    border-radius: 8px;
-    min-height: 24px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #252525;
-  }
-  ::-webkit-scrollbar-track {
-    background: #121212;
-    border-radius: 8px;
-  } */
 }

@@ -29,7 +29,7 @@ export default function Search() {
     }
 
     return (
-        <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-spotify-white pt-12">
+        <div className="spotify-main-gradient flex min-h-screen flex-col items-center pt-10 text-spotify-white">
             <Card className="w-full max-w-2xl p-8 bg-spotify-gray border-spotify-light-gray">
                 <h1 className="text-2xl font-bold mb-6 text-spotify-white">
                     Search Music

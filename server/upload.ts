@@ -13,19 +13,34 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+export function resolveUploadPath(filePath: string): string | null {
+    const resolvedPath = path.resolve(filePath);
+    const relativePath = path.relative(uploadsDir, resolvedPath);
+    const isPathInsideUploads =
+        relativePath &&
+        !relativePath.startsWith("..") &&
+        !path.isAbsolute(relativePath);
+
+    if (!isPathInsideUploads) {
+        return null;
+    }
+
+    return resolvedPath;
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const userDir = path.join(
             uploadsDir,
-            req.user?.id?.toString() || "anonymous"
+            (req.user as any)?.id?.toString() || "anonymous"
         );
 
         try {
             await mkdir(userDir, { recursive: true });
             cb(null, userDir);
         } catch (error) {
-            cb(error, "");
+            cb(error as Error, "");
         }
     },
     filename: (req, file, cb) => {
@@ -91,11 +106,12 @@ export async function extractMetadata(filePath: string, originalName: string) {
 
 // Stream audio file
 export function streamAudio(filePath: string, req: any, res: any) {
-    if (!fs.existsSync(filePath)) {
+    const safePath = resolveUploadPath(filePath);
+    if (!safePath || !fs.existsSync(safePath)) {
         return res.status(404).json({ message: "File not found" });
     }
 
-    const stat = fs.statSync(filePath);
+    const stat = fs.statSync(safePath);
     const fileSize = stat.size;
     const range = req.headers.range;
 
@@ -106,7 +122,7 @@ export function streamAudio(filePath: string, req: any, res: any) {
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
         const chunksize = end - start + 1;
 
-        const file = fs.createReadStream(filePath, { start, end });
+        const file = fs.createReadStream(safePath, { start, end });
         const head = {
             "Content-Range": `bytes ${start}-${end}/${fileSize}`,
             "Accept-Ranges": "bytes",
@@ -124,6 +140,6 @@ export function streamAudio(filePath: string, req: any, res: any) {
         };
 
         res.writeHead(200, head);
-        fs.createReadStream(filePath).pipe(res);
+        fs.createReadStream(safePath).pipe(res);
     }
 }

@@ -4,10 +4,10 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import type { Request, Response, NextFunction } from "express";
-import cookieParser from "cookie-parser";
+import crypto from "crypto";
 
-// const JWT_SECRET = process.env.JWT_SECRET || "a8d73bb6186c3577042e243fbf923959cbc407dd88de99e580dae2a8fa00746e";
-const JWT_SECRET = "fallback_jwt_secret";
+const JWT_SECRET =
+    process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 const GOOGLE_CLIENT_ID =
     process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET =
@@ -128,6 +128,8 @@ export function authenticateUserOrGuest(
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
+    } else if (req.signedCookies && req.signedCookies.token) {
+        token = req.signedCookies.token;
     } else if (req.cookies && req.cookies.token) {
         token = req.cookies.token;
     }

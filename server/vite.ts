@@ -7,6 +7,7 @@ import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
+const devPageRequestBuckets = new Map<string, { count: number; resetAt: number }>();
 
 export function log(message: string, source = "express") {
     const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -42,6 +43,23 @@ export async function setupVite(app: Express, server: Server) {
 
     app.use(vite.middlewares);
     app.use("*", async (req, res, next) => {
+        const key = req.ip || "unknown-ip";
+        const now = Date.now();
+        const windowMs = 60 * 1000;
+        const requestLimit = 180;
+        const bucket = devPageRequestBuckets.get(key);
+        if (!bucket || now > bucket.resetAt) {
+            devPageRequestBuckets.set(key, {
+                count: 1,
+                resetAt: now + windowMs,
+            });
+        } else if (bucket.count >= requestLimit) {
+            res.set("Retry-After", Math.ceil((bucket.resetAt - now) / 1000).toString());
+            return res.status(429).send("Too many requests");
+        } else {
+            bucket.count += 1;
+        }
+
         const url = req.originalUrl;
 
         try {

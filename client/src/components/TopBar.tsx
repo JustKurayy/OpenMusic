@@ -13,22 +13,8 @@ export default function TopBar() {
     const [showMenu, setShowMenu] = useState(false);
 
     return (
-        <header className="spotify-panel mb-2 flex items-center justify-between px-4 py-3">
+        <header className="mb-2 flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
-                <button
-                    className="spotify-panel flex h-8 w-8 items-center justify-center rounded-full"
-                    onClick={() => window.history.back()}
-                    aria-label="Go back"
-                >
-                    <ChevronLeft className="h-4 w-4 text-gray-300" />
-                </button>
-                <button
-                    className="spotify-panel flex h-8 w-8 items-center justify-center rounded-full"
-                    onClick={() => window.history.forward()}
-                    aria-label="Go forward"
-                >
-                    <ChevronRight className="h-4 w-4 text-gray-300" />
-                </button>
             </div>
 
             <div className="relative mx-4 w-full max-w-md">

@@ -81,11 +81,37 @@ function csrfProtection(
 
     const cookieToken = req.cookies[csrfCookieName];
     const headerToken = req.get(csrfHeader);
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-        return res.status(403).json({ message: "Invalid CSRF token" });
+    if (cookieToken && headerToken && cookieToken === headerToken) {
+        return next();
     }
 
-    return next();
+    const trustedOrigins = new Set<string>([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+    ]);
+    if (process.env.FRONTEND_URL) {
+        trustedOrigins.add(process.env.FRONTEND_URL);
+    }
+
+    const requestOrigin = req.get("origin");
+    const requestReferer = req.get("referer");
+    const hostOrigin = `${req.protocol}://${req.get("host")}`;
+
+    const isTrustedOrigin =
+        (requestOrigin && trustedOrigins.has(requestOrigin)) ||
+        (requestReferer &&
+            [...trustedOrigins].some((trusted) =>
+                requestReferer.startsWith(trusted)
+            )) ||
+        (requestOrigin && requestOrigin === hostOrigin);
+
+    if (isTrustedOrigin) {
+        return next();
+    }
+
+    return res.status(403).json({ message: "Invalid CSRF token" });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

@@ -5,6 +5,8 @@ export interface ApiTrack {
     title: string;
     artist: string;
     album?: string;
+    trackNumber?: number;
+    coverArt?: string; // filesystem path — use getArtworkUrl(id) for the URL
     duration: number;
     filename: string;
     createdAt: string;
@@ -77,9 +79,19 @@ export const tracksApi = {
         });
     },
 
+    extractMetadata: (formData: FormData) => {
+        return fetch("/api/tracks/extract-metadata", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+        });
+    },
+
     delete: (id: number) => apiRequest("DELETE", `/api/tracks/${id}`),
 
     getStreamUrl: (id: number) => `/api/tracks/${id}/stream`,
+
+    getArtworkUrl: (id: number) => `/api/tracks/${id}/artwork`,
 };
 
 // Playlists API

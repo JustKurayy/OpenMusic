@@ -10,7 +10,7 @@ import {
     isGoogleOAuthConfigured,
     createGuestUser,
 } from "./auth";
-import { upload, extractMetadata, streamAudio } from "./upload";
+import { upload, extractMetadata, extractMetadataPreview, streamAudio } from "./upload";
 import {
     insertTrackSchema,
     insertPlaylistSchema,
@@ -252,6 +252,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
     });
 
+    // Extract metadata preview (no permanent save, parses tags and returns base64 cover art)
+    app.post(
+        "/api/tracks/extract-metadata",
+        authenticateUserOrGuest,
+        upload.single("audio"),
+        async (req, res) => {
+            try {
+                if (!req.file) {
+                    return res.status(400).json({ message: "No file uploaded" });
+                }
+                const metadata = await extractMetadataPreview(
+                    req.file.path,
+                    req.file.originalname
+                );
+                // Delete the temp file — it was only needed for tag parsing
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                res.json(metadata);
+            } catch (error: any) {
+                if (req.file && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                res.status(500).json({ message: "Failed to extract metadata" });
+            }
+        }
+    );
+
     // Track routes
     app.get("/api/tracks", authenticateUserOrGuest, async (req, res) => {
         try {
@@ -306,7 +334,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const trackData = {
                     title: req.body.title || metadata.title,
                     artist: req.body.artist || metadata.artist,
-                    album: req.body.album || metadata.album,
+                    album: req.body.album || metadata.album || null,
+                    trackNumber: metadata.trackNumber ?? null,
+                    coverArt: metadata.coverArtPath ?? null,
                     duration: metadata.duration,
                     filename: req.file.filename,
                     filePath: req.file.path,
@@ -371,6 +401,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     return res.status(404).json({ message: "Track not found" });
                 }
                 streamAudio(track.filePath, req, res);
+            } catch (error) {
+                res.status(500).json({ message: "Server error" });
+            }
+        }
+    );
+
+    // Serve track cover art
+    app.get(
+        "/api/tracks/:id/artwork",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                const track = await storage.getTrack(parseInt(req.params.id));
+                if (!track || !(track as any).coverArt) {
+                    return res.status(404).json({ message: "No artwork found" });
+                }
+                const safePath = resolveUploadPath((track as any).coverArt);
+                if (!safePath || !fs.existsSync(safePath)) {
+                    return res.status(404).json({ message: "Artwork file not found" });
+                }
+                const mimeType = (track as any).coverArt.endsWith(".png")
+                    ? "image/png"
+                    : "image/jpeg";
+                res.setHeader("Content-Type", mimeType);
+                res.setHeader("Cache-Control", "public, max-age=31536000");
+                fs.createReadStream(safePath).pipe(res);
             } catch (error) {
                 res.status(500).json({ message: "Server error" });
             }

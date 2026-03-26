@@ -77,16 +77,31 @@ export const upload = multer({
     },
 });
 
-// Extract metadata from audio file
+// Extract metadata from audio file and save cover art to disk
 export async function extractMetadata(filePath: string, originalName: string) {
     try {
         const metadata = await parseFile(filePath);
 
+        // Extract and save cover art next to the audio file
+        let coverArtPath: string | undefined;
+        const pictures = metadata.common.picture;
+        if (pictures && pictures.length > 0) {
+            const picture = pictures[0];
+            const ext = picture.format === "image/png" ? ".png" : ".jpg";
+            const dir = path.dirname(filePath);
+            const baseName = path.parse(filePath).name;
+            const coverFilename = `${baseName}-cover${ext}`;
+            coverArtPath = path.join(dir, coverFilename);
+            await writeFile(coverArtPath, Buffer.from(picture.data));
+        }
+
         return {
             title: metadata.common.title || path.parse(originalName).name,
             artist: metadata.common.artist || "Unknown Artist",
-            album: metadata.common.album || "Unknown Album",
+            album: metadata.common.album || undefined,
+            trackNumber: metadata.common.track?.no || undefined,
             duration: metadata.format.duration || 0,
+            coverArtPath,
         };
     } catch (error) {
         console.error("Error extracting metadata:", error);
@@ -98,8 +113,46 @@ export async function extractMetadata(filePath: string, originalName: string) {
         return {
             title: parts.length > 1 ? parts[1] : nameWithoutExt,
             artist: parts.length > 1 ? parts[0] : "Unknown Artist",
-            album: "Unknown Album",
+            album: undefined,
+            trackNumber: undefined,
             duration: 0,
+            coverArtPath: undefined,
+        };
+    }
+}
+
+// Extract metadata for preview only (returns cover art as base64 data URL, no disk save)
+export async function extractMetadataPreview(filePath: string, originalName: string) {
+    try {
+        const metadata = await parseFile(filePath);
+
+        let coverArtDataUrl: string | undefined;
+        const pictures = metadata.common.picture;
+        if (pictures && pictures.length > 0) {
+            const picture = pictures[0];
+            const b64 = Buffer.from(picture.data).toString("base64");
+            coverArtDataUrl = `data:${picture.format};base64,${b64}`;
+        }
+
+        return {
+            title: metadata.common.title || path.parse(originalName).name,
+            artist: metadata.common.artist || "",
+            album: metadata.common.album || "",
+            trackNumber: metadata.common.track?.no ?? undefined,
+            coverArtDataUrl,
+        };
+    } catch (error) {
+        console.error("Error extracting metadata preview:", error);
+
+        const nameWithoutExt = path.parse(originalName).name;
+        const parts = nameWithoutExt.split(" - ");
+
+        return {
+            title: parts.length > 1 ? parts[1] : nameWithoutExt,
+            artist: parts.length > 1 ? parts[0] : "",
+            album: "",
+            trackNumber: undefined,
+            coverArtDataUrl: undefined,
         };
     }
 }

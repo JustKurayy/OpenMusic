@@ -1,6 +1,15 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CloudUpload, X, Music, Users, ExternalLink } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    CloudUpload,
+    X,
+    Music,
+    Users,
+    ExternalLink,
+    Loader2,
+    ImageIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +23,9 @@ interface UploadFile {
     title: string;
     artist: string;
     album: string;
+    trackNumber?: number;
+    coverArtPreview?: string; // data URL for preview
+    isLoadingMetadata: boolean;
 }
 
 export default function Upload() {
@@ -33,6 +45,9 @@ export default function Upload() {
             formData.append("title", uploadFile.title);
             formData.append("artist", uploadFile.artist);
             formData.append("album", uploadFile.album);
+            if (uploadFile.trackNumber != null) {
+                formData.append("trackNumber", String(uploadFile.trackNumber));
+            }
 
             const response = await tracksApi.upload(formData);
             if (!response.ok) {
@@ -43,10 +58,7 @@ export default function Upload() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/tracks"] });
-            toast({
-                title: "Success",
-                description: "Track uploaded successfully!",
-            });
+            toast({ title: "Success", description: "Track uploaded successfully!" });
         },
         onError: (error: Error) => {
             toast({
@@ -70,54 +82,91 @@ export default function Upload() {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-
-        const files = Array.from(e.dataTransfer.files);
-        handleFiles(files);
+        handleFiles(Array.from(e.dataTransfer.files));
     };
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            handleFiles(files);
+        if (e.target.files) handleFiles(Array.from(e.target.files));
+    };
+
+    const handleFiles = async (files: File[]) => {
+        const audioFiles = files.filter(
+            (f) =>
+                f.type.includes("audio") ||
+                f.name.toLowerCase().endsWith(".mp3") ||
+                f.name.toLowerCase().endsWith(".wav")
+        );
+        if (audioFiles.length === 0) return;
+
+        // Add placeholder entries in loading state
+        const startIdx = uploadFiles.length;
+        const loadingEntries: UploadFile[] = audioFiles.map((file) => ({
+            file,
+            title: "",
+            artist: "",
+            album: "",
+            isLoadingMetadata: true,
+        }));
+        setUploadFiles((prev) => [...prev, ...loadingEntries]);
+
+        // Extract metadata for each file via the server
+        for (let i = 0; i < audioFiles.length; i++) {
+            try {
+                const formData = new FormData();
+                formData.append("audio", audioFiles[i]);
+                const res = await tracksApi.extractMetadata(formData);
+                if (res.ok) {
+                    const meta = await res.json();
+                    setUploadFiles((prev) =>
+                        prev.map((f, idx) =>
+                            idx === startIdx + i
+                                ? {
+                                      ...f,
+                                      title: meta.title ?? f.file.name.replace(/\.[^/.]+$/, ""),
+                                      artist: meta.artist ?? "",
+                                      album: meta.album ?? "",
+                                      trackNumber: meta.trackNumber,
+                                      coverArtPreview: meta.coverArtDataUrl,
+                                      isLoadingMetadata: false,
+                                  }
+                                : f
+                        )
+                    );
+                } else {
+                    throw new Error("Metadata extraction failed");
+                }
+            } catch {
+                // Fallback to filename parsing
+                const nameWithoutExt = audioFiles[i].name.replace(/\.[^/.]+$/, "");
+                const parts = nameWithoutExt.split(" - ");
+                setUploadFiles((prev) =>
+                    prev.map((f, idx) =>
+                        idx === startIdx + i
+                            ? {
+                                  ...f,
+                                  title: parts.length > 1 ? parts[1] : nameWithoutExt,
+                                  artist: parts.length > 1 ? parts[0] : "",
+                                  album: "",
+                                  isLoadingMetadata: false,
+                              }
+                            : f
+                    )
+                );
+            }
         }
     };
 
-    const handleFiles = (files: File[]) => {
-        const audioFiles = files.filter(
-            (file) =>
-                file.type.includes("audio") ||
-                file.name.toLowerCase().endsWith(".mp3") ||
-                file.name.toLowerCase().endsWith(".wav")
-        );
-
-        const newUploadFiles = audioFiles.map((file) => {
-            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-            const parts = nameWithoutExt.split(" - ");
-
-            return {
-                file,
-                title: parts.length > 1 ? parts[1] : nameWithoutExt,
-                artist: parts.length > 1 ? parts[0] : "",
-                album: "",
-            };
-        });
-
-        setUploadFiles((prev) => [...prev, ...newUploadFiles]);
-    };
-
-    const updateUploadFile = (
+    const updateField = (
         index: number,
-        field: keyof Omit<UploadFile, "file">,
-        value: string
+        field: keyof Omit<UploadFile, "file" | "isLoadingMetadata" | "coverArtPreview">,
+        value: string | number
     ) => {
         setUploadFiles((prev) =>
-            prev.map((item, i) =>
-                i === index ? { ...item, [field]: value } : item
-            )
+            prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
         );
     };
 
-    const removeUploadFile = (index: number) => {
+    const removeFile = (index: number) => {
         setUploadFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
@@ -131,15 +180,12 @@ export default function Upload() {
                 });
                 return;
             }
-
             try {
                 await uploadMutation.mutateAsync(uploadFile);
-            } catch (error) {
-                // Error is handled in mutation onError
+            } catch {
                 break;
             }
         }
-
         if (!uploadMutation.isError) {
             setUploadFiles([]);
         }
@@ -148,48 +194,23 @@ export default function Upload() {
     if (isGuest) {
         return (
             <div className="flex-1 overflow-y-auto p-6">
-                <h1 className="text-3xl font-bold mb-6 text-spotify-white">
-                    Upload Your Music
-                </h1>
-
-                {/* Guest Mode Notice */}
-                <Card className="mb-8 bg-spotify-light-gray border-spotify-light-gray">
+                <h1 className="text-3xl font-bold mb-6 text-white">Upload Your Music</h1>
+                <Card className="mb-8 bg-zinc-900 border-zinc-800">
                     <CardContent className="p-8 text-center">
-                        <Users className="mx-auto mb-4 w-16 h-16 text-spotify-text" />
-                        <h3 className="text-xl font-semibold mb-4 text-spotify-white">
+                        <Users className="mx-auto mb-4 w-16 h-16 text-zinc-500" />
+                        <h3 className="text-xl font-semibold mb-4 text-white">
                             Upload Not Available in Guest Mode
                         </h3>
-                        <p className="text-spotify-text mb-6 max-w-md mx-auto">
-                            To upload and manage your own music, you'll need to
-                            sign in with Google. Guest mode lets you explore the
-                            app with existing tracks.
+                        <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                            Sign in with Google to upload and manage your own music.
                         </p>
                         <Button
-                            onClick={() =>
-                                (window.location.href = "/api/auth/google")
-                            }
-                            className="bg-spotify-green hover:bg-spotify-green-hover text-black font-semibold"
+                            onClick={() => (window.location.href = "/api/auth/google")}
+                            className="bg-green-500 hover:bg-green-400 text-black font-semibold"
                         >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Sign in with Google
                         </Button>
-                    </CardContent>
-                </Card>
-
-                {/* Demo Information */}
-                <Card className="bg-spotify-light-gray border-spotify-light-gray">
-                    <CardHeader>
-                        <CardTitle className="text-spotify-white">
-                            What you can do in Guest Mode
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="space-y-2 text-spotify-text">
-                            <li>• Browse and play existing tracks</li>
-                            <li>• Explore the music library</li>
-                            <li>• Use the audio player controls</li>
-                            <li>• Experience the Spotify-inspired interface</li>
-                        </ul>
                     </CardContent>
                 </Card>
             </div>
@@ -197,19 +218,22 @@ export default function Upload() {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto p-6 popofffront toplight min-h-screen">
-            <h1 className="text-3xl font-bold mb-6 text-spotify-white">
-                Upload Your Music
-            </h1>
+        <motion.div
+            className="flex-1 overflow-y-auto p-6 min-h-screen bg-zinc-950"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+        >
+            <h1 className="text-3xl font-bold mb-6 text-white">Upload Your Music</h1>
 
-            {/* Upload Area */}
-            <Card className="mb-8">
+            {/* Drop zone */}
+            <Card className="mb-8 bg-zinc-900 border-zinc-800">
                 <CardContent className="p-8">
                     <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 ${
+                        className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
                             isDragOver
-                                ? "border-spotify-green border-opacity-60 bg-spotify-green bg-opacity-10"
-                                : "border-spotify-text border-opacity-30 hover:border-spotify-green hover:border-opacity-60"
+                                ? "border-green-500 bg-green-500/10"
+                                : "border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/40"
                         }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
@@ -218,29 +242,24 @@ export default function Upload() {
                     >
                         <CloudUpload
                             className={`mx-auto mb-4 w-12 h-12 transition-colors duration-200 ${
-                                isDragOver
-                                    ? "text-spotify-green"
-                                    : "text-spotify-text group-hover:text-spotify-green"
+                                isDragOver ? "text-green-400" : "text-zinc-500"
                             }`}
                         />
                         <h3
-                            className={`text-lg font-semibold mb-2 transition-colors duration-200 ${
-                                isDragOver
-                                    ? "text-spotify-green"
-                                    : "text-spotify-white"
+                            className={`text-lg font-semibold mb-2 ${
+                                isDragOver ? "text-green-400" : "text-white"
                             }`}
                         >
-                            Upload your tracks
+                            Drop your tracks here
                         </h3>
-                        <p className="text-spotify-text mb-4">
-                            Drag and drop your .mp3 or .wav files here, or click
-                            to browse
+                        <p className="text-zinc-500 mb-5 text-sm">
+                            Drag and drop .mp3 or .wav files — cover art and tags are read
+                            automatically
                         </p>
-                        <Button className="bg-spotify-green hover:bg-spotify-green-hover text-black font-semibold">
+                        <Button className="bg-green-500 hover:bg-green-400 text-black font-semibold">
                             Choose Files
                         </Button>
                     </div>
-
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -252,130 +271,153 @@ export default function Upload() {
                 </CardContent>
             </Card>
 
-            {/* Upload Queue */}
-            {uploadFiles.length > 0 && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-spotify-white">
-                            Ready to Upload ({uploadFiles.length})
-                        </h2>
-                        <Button
-                            onClick={handleUploadAll}
-                            disabled={uploadMutation.isPending}
-                            className="bg-spotify-green hover:bg-spotify-green-hover text-black font-semibold"
-                        >
-                            {uploadMutation.isPending
-                                ? "Uploading..."
-                                : "Upload All"}
-                        </Button>
-                    </div>
+            {/* Upload queue */}
+            <AnimatePresence>
+                {uploadFiles.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4"
+                    >
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-white">
+                                Ready to Upload ({uploadFiles.length})
+                            </h2>
+                            <Button
+                                onClick={handleUploadAll}
+                                disabled={
+                                    uploadMutation.isPending ||
+                                    uploadFiles.some((f) => f.isLoadingMetadata)
+                                }
+                                className="bg-green-500 hover:bg-green-400 text-black font-semibold"
+                            >
+                                {uploadMutation.isPending ? "Uploading…" : "Upload All"}
+                            </Button>
+                        </div>
 
-                    {uploadFiles.map((uploadFile, index) => (
-                        <Card
-                            key={index}
-                            className="bg-spotify-light-gray border-spotify-light-gray"
-                        >
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <Music className="w-8 h-8 text-spotify-green" />
-                                        <div>
-                                            <CardTitle className="text-spotify-white text-base">
-                                                {uploadFile.file.name}
-                                            </CardTitle>
-                                            <p className="text-sm text-spotify-text">
-                                                {(
-                                                    uploadFile.file.size /
-                                                    (1024 * 1024)
-                                                ).toFixed(2)}{" "}
-                                                MB
-                                            </p>
+                        {uploadFiles.map((uploadFile, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ delay: index * 0.04 }}
+                            >
+                                <Card className="bg-zinc-900 border-zinc-800">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                {/* Cover art preview or loading */}
+                                                <div className="w-14 h-14 rounded-md flex-shrink-0 overflow-hidden bg-zinc-800 flex items-center justify-center">
+                                                    {uploadFile.isLoadingMetadata ? (
+                                                        <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+                                                    ) : uploadFile.coverArtPreview ? (
+                                                        <img
+                                                            src={uploadFile.coverArtPreview}
+                                                            alt="cover"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Music className="w-6 h-6 text-green-500" />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <CardTitle className="text-white text-sm truncate">
+                                                        {uploadFile.file.name}
+                                                    </CardTitle>
+                                                    <p className="text-xs text-zinc-500 mt-0.5">
+                                                        {(uploadFile.file.size / (1024 * 1024)).toFixed(2)} MB
+                                                        {uploadFile.isLoadingMetadata && (
+                                                            <span className="ml-2 text-zinc-600">
+                                                                Reading tags…
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeFile(index)}
+                                                className="text-zinc-500 hover:text-white flex-shrink-0"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
                                         </div>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeUploadFile(index)}
-                                        className="text-spotify-text hover:text-spotify-white"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </CardHeader>
+                                    </CardHeader>
 
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <Label
-                                            htmlFor={`title-${index}`}
-                                            className="text-spotify-text"
-                                        >
-                                            Track Title *
-                                        </Label>
-                                        <Input
-                                            id={`title-${index}`}
-                                            value={uploadFile.title}
-                                            onChange={(e) =>
-                                                updateUploadFile(
-                                                    index,
-                                                    "title",
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="bg-spotify-gray border-spotify-gray text-spotify-white"
-                                            placeholder="Enter track title"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor={`artist-${index}`}
-                                            className="text-spotify-text"
-                                        >
-                                            Artist Name
-                                        </Label>
-                                        <Input
-                                            id={`artist-${index}`}
-                                            value={uploadFile.artist}
-                                            onChange={(e) =>
-                                                updateUploadFile(
-                                                    index,
-                                                    "artist",
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="bg-spotify-gray border-spotify-gray text-spotify-white"
-                                            placeholder="Enter artist name"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor={`album-${index}`}
-                                            className="text-spotify-text"
-                                        >
-                                            Album (Optional)
-                                        </Label>
-                                        <Input
-                                            id={`album-${index}`}
-                                            value={uploadFile.album}
-                                            onChange={(e) =>
-                                                updateUploadFile(
-                                                    index,
-                                                    "album",
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="bg-spotify-gray border-spotify-gray text-spotify-white"
-                                            placeholder="Enter album name"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
-        </div>
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div>
+                                                <Label className="text-zinc-400 text-xs mb-1 block">
+                                                    Title *
+                                                </Label>
+                                                <Input
+                                                    value={uploadFile.title}
+                                                    onChange={(e) =>
+                                                        updateField(index, "title", e.target.value)
+                                                    }
+                                                    disabled={uploadFile.isLoadingMetadata}
+                                                    className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                                                    placeholder="Track title"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-zinc-400 text-xs mb-1 block">
+                                                    Artist
+                                                </Label>
+                                                <Input
+                                                    value={uploadFile.artist}
+                                                    onChange={(e) =>
+                                                        updateField(index, "artist", e.target.value)
+                                                    }
+                                                    disabled={uploadFile.isLoadingMetadata}
+                                                    className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                                                    placeholder="Artist name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-zinc-400 text-xs mb-1 block">
+                                                    Album
+                                                </Label>
+                                                <Input
+                                                    value={uploadFile.album}
+                                                    onChange={(e) =>
+                                                        updateField(index, "album", e.target.value)
+                                                    }
+                                                    disabled={uploadFile.isLoadingMetadata}
+                                                    className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                                                    placeholder="Album name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-zinc-400 text-xs mb-1 block">
+                                                    Track #
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    value={uploadFile.trackNumber ?? ""}
+                                                    onChange={(e) =>
+                                                        updateField(
+                                                            index,
+                                                            "trackNumber",
+                                                            parseInt(e.target.value) || 0
+                                                        )
+                                                    }
+                                                    disabled={uploadFile.isLoadingMetadata}
+                                                    className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                                                    placeholder="1"
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 }

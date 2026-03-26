@@ -28,6 +28,8 @@ export const tracks = pgTable("tracks", {
     title: text("title").notNull(),
     artist: text("artist").notNull(),
     album: text("album"),
+    trackNumber: integer("track_number"),
+    coverArt: text("cover_art"), // filesystem path to extracted cover art image
     duration: real("duration").notNull(), // in seconds
     filename: text("filename").notNull(),
     filePath: text("file_path").notNull(),

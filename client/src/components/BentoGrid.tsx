@@ -4,6 +4,7 @@ import { getCountryCode } from "@/lib/getCountryCode";
 import { getStationsByCountry } from "@/lib/radioBrowserApi";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { tracksApi, type ApiTrack } from "@/lib/api";
 import { playlistsApi, type ApiPlaylist } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import TrackEditDialog from "@/components/TrackEditDialog";
 
 interface BentoGridProps {
     tracks: ApiTrack[];
@@ -114,6 +116,8 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [isHovering, setIsHovering] = useState(false);
     const gridRef = useRef<HTMLDivElement>(null);
+    const [editingTrack, setEditingTrack] = useState<ApiTrack | null>(null);
+    const queryClient = useQueryClient();
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -192,7 +196,10 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                             >
                                 <div className="relative mb-4">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop&auto=format&q=80&seed=${index}`}
+                                        src={
+                                            track.coverImage ||
+                                            `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop&auto=format&q=80&seed=${index}`
+                                        }
                                         alt={track.title}
                                         className="w-full aspect-square rounded-lg object-cover shadow-lg"
                                     />
@@ -229,22 +236,18 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                                 track={contextMenu.track}
                                 onPlay={onTrackClick}
                                 onAddToPlaylist={(playlistId, trackId) => {
-                                    import("@/lib/api").then(
-                                        ({ playlistsApi }) => {
-                                            playlistsApi.addTrack(
-                                                playlistId,
-                                                trackId
-                                            );
-                                        }
-                                    );
+                                    playlistsApi.addTrack(playlistId, trackId);
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["/api/playlists"],
+                                    });
                                 }}
                                 onDelete={(trackId) => {
-                                    import("@/lib/api").then(
-                                        ({ tracksApi }) => {
-                                            tracksApi.delete(trackId);
-                                        }
-                                    );
+                                    tracksApi.delete(trackId);
+                                    queryClient.invalidateQueries({
+                                        queryKey: ["/api/tracks"],
+                                    });
                                 }}
+                                onEdit={(track) => setEditingTrack(track)}
                                 onClose={() => setContextMenu(null)}
                             />
                         )}
@@ -487,10 +490,21 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                                 key={track.id}
                                 className="flex-shrink-0 w-48 bg-gray-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative"
                                 onClick={() => onTrackClick(track)}
+                                onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    setContextMenu({
+                                        x: e.clientX,
+                                        y: e.clientY,
+                                        track,
+                                    });
+                                }}
                             >
                                 <div className="relative mb-4">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`}
+                                        src={
+                                            track.coverImage ||
+                                            `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`
+                                        }
                                         alt={track.title}
                                         className="w-full aspect-square rounded-lg object-cover shadow-lg"
                                     />
@@ -582,6 +596,11 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
         </section>
         */}
             </div>
+            <TrackEditDialog
+                track={editingTrack}
+                open={!!editingTrack}
+                onOpenChange={(open) => !open && setEditingTrack(null)}
+            />
         </div>
     );
 }

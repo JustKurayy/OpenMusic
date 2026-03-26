@@ -1,7 +1,11 @@
-import { Clock, MoreHorizontal, Play } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/contexts/PlayerContext";
-import type { ApiTrack } from "@/lib/api";
+import { playlistsApi, tracksApi, type ApiTrack } from "@/lib/api";
+import { useState } from "react";
+import { ContextMenu } from "@/components/ui/ContextMenu";
+import TrackEditDialog from "@/components/TrackEditDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TrackListProps {
     tracks: ApiTrack[];
@@ -37,6 +41,13 @@ export default function TrackList({
     showDateAdded = true,
 }: TrackListProps) {
     const { playTrack, currentTrack, isPlaying } = usePlayer();
+    const [contextMenu, setContextMenu] = useState<{
+        x: number;
+        y: number;
+        track: ApiTrack;
+    } | null>(null);
+    const [editingTrack, setEditingTrack] = useState<ApiTrack | null>(null);
+    const queryClient = useQueryClient();
 
     const handlePlayTrack = (track: ApiTrack) => {
         playTrack(track, tracks);
@@ -59,10 +70,21 @@ export default function TrackList({
                         key={track.id}
                         className={`flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? "bg-spotify-green bg-opacity-10" : ""}`}
                         onClick={() => handlePlayTrack(track)}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            setContextMenu({
+                                x: e.clientX,
+                                y: e.clientY,
+                                track,
+                            });
+                        }}
                     >
                         <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center overflow-hidden">
                             <img
-                                src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=40&h=40&fit=crop`}
+                                src={
+                                    track.coverImage ||
+                                    `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=40&h=40&fit=crop`
+                                }
                                 alt="Track cover"
                                 className="w-8 h-8 object-cover rounded"
                             />
@@ -90,6 +112,35 @@ export default function TrackList({
                     </li>
                 );
             })}
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    track={contextMenu.track}
+                    onPlay={handlePlayTrack}
+                    onAddToPlaylist={async (playlistId, trackId) => {
+                        await playlistsApi.addTrack(playlistId, trackId);
+                        queryClient.invalidateQueries({
+                            queryKey: ["/api/playlists"],
+                        });
+                    }}
+                    onDelete={async (trackId) => {
+                        await tracksApi.delete(trackId);
+                        queryClient.invalidateQueries({
+                            queryKey: ["/api/tracks"],
+                        });
+                    }}
+                    onEdit={(track) => setEditingTrack(track)}
+                    onClose={() => setContextMenu(null)}
+                />
+            )}
+            <TrackEditDialog
+                track={editingTrack}
+                open={!!editingTrack}
+                onOpenChange={(open) => {
+                    if (!open) setEditingTrack(null);
+                }}
+            />
         </ul>
     );
 }

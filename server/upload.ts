@@ -82,11 +82,23 @@ export async function extractMetadata(filePath: string, originalName: string) {
     try {
         const metadata = await parseFile(filePath);
 
+        let coverImage: string | undefined;
+        const picture = metadata.common.picture?.[0];
+        if (picture?.data && picture.data.length > 0) {
+            const extension =
+                picture.format?.split("/")[1]?.toLowerCase() || "jpg";
+            const coverFilename = `${path.parse(path.basename(filePath)).name}-cover.${extension}`;
+            const coverPath = path.join(path.dirname(filePath), coverFilename);
+            await writeFile(coverPath, picture.data);
+            coverImage = `/uploads/${path.relative(uploadsDir, coverPath).replace(/\\/g, "/")}`;
+        }
+
         return {
             title: metadata.common.title || path.parse(originalName).name,
             artist: metadata.common.artist || "Unknown Artist",
             album: metadata.common.album || "Unknown Album",
             duration: metadata.format.duration || 0,
+            coverImage,
         };
     } catch (error) {
         console.error("Error extracting metadata:", error);
@@ -100,6 +112,7 @@ export async function extractMetadata(filePath: string, originalName: string) {
             artist: parts.length > 1 ? parts[0] : "Unknown Artist",
             album: "Unknown Album",
             duration: 0,
+            coverImage: undefined,
         };
     }
 }

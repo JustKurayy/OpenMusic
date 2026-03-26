@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -16,10 +16,7 @@ import NotFound from "@/pages/not-found";
 import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
 import Radio from "@/pages/Radio";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Update queryClient to include auth header
 queryClient.setDefaultOptions({
@@ -47,7 +44,7 @@ queryClient.setDefaultOptions({
 
 function AppContent() {
     const { user, isLoading } = useAuth();
-    const [searchQuery, setSearchQuery] = useState("");
+    const [location] = useLocation();
 
     if (isLoading) {
         return (
@@ -69,16 +66,30 @@ function AppContent() {
     return (
         <Layout>
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Switch>
-                    <Route path="/" component={Home} />
-                    <Route path="/library" component={Library} />
-                    <Route path="/upload" component={Upload} />
-                    <Route path="/radio" component={Radio} />
-                    <Route path="/playlist/:id" component={Playlist} />
-                    <Route path="/search" component={SearchPage} />
-                    <Route path="/create-playlist" component={CreatePlaylist} />
-                    <Route component={NotFound} />
-                </Switch>
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        key={location}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="h-full"
+                    >
+                        <Switch>
+                            <Route path="/" component={Home} />
+                            <Route path="/library" component={Library} />
+                            <Route path="/upload" component={Upload} />
+                            <Route path="/radio" component={Radio} />
+                            <Route path="/playlist/:id" component={Playlist} />
+                            <Route path="/search" component={SearchPage} />
+                            <Route
+                                path="/create-playlist"
+                                component={CreatePlaylist}
+                            />
+                            <Route component={NotFound} />
+                        </Switch>
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </Layout>
     );

@@ -119,9 +119,12 @@ export default function Library() {
                                 <Plus className="w-5 h-5 mr-2" />
                                 Upload Music
                             </a>
-                            <button className="inline-flex items-center px-8 py-4 border-2 border-gray-500 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all duration-200">
+                            <a
+                                href="/create-playlist"
+                                className="inline-flex items-center px-8 py-4 border-2 border-gray-500 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all duration-200"
+                            >
                                 Create Playlist
-                            </button>
+                            </a>
                         </div>
                     </div>
                 ) : (
@@ -219,7 +222,11 @@ export default function Library() {
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                                                 {filteredPlaylists.map(
                                                     (playlist) => (
-                                                        <div className="group cursor-pointer">
+                                                        <a
+                                                            key={playlist.id}
+                                                            className="group cursor-pointer"
+                                                            href={`/playlist/${playlist.id}`}
+                                                        >
                                                             <div className="relative bg-gray-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-4 transition-all duration-200 hover:scale-105">
                                                                 <div className="relative mb-4">
                                                                     <div className="w-full aspect-square bg-gradient-to-br from-gray-600 to-gray-500 rounded-lg flex items-center justify-center overflow-hidden shadow-lg">
@@ -254,7 +261,7 @@ export default function Library() {
                                                                         "Unknown"}
                                                                 </p>
                                                             </div>
-                                                        </div>
+                                                        </a>
                                                     )
                                                 )}
                                             </div>

@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { X, Clock, MoreHorizontal, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import TrackEditDialog from "@/components/TrackEditDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function QueueDrawer({
     isOpen,
@@ -20,6 +22,8 @@ export default function QueueDrawer({
     } | null>(null);
     const { queue, currentTrack, currentIndex, isPlaying, playTrack } =
         usePlayer();
+    const [editingTrack, setEditingTrack] = useState<any>(null);
+    const queryClient = useQueryClient();
     const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
 
     // Always open by default
@@ -62,7 +66,10 @@ export default function QueueDrawer({
                             <div className="flex items-center space-x-3">
                                 <div className="relative">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=48&h=48&fit=crop&auto=format&q=80`}
+                                        src={
+                                            currentTrack.coverImage ||
+                                            `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=48&h=48&fit=crop&auto=format&q=80`
+                                        }
                                         alt="Album cover"
                                         className="w-12 h-12 rounded object-cover"
                                     />
@@ -167,7 +174,10 @@ export default function QueueDrawer({
                                     </div>
                                     {/* Album Art */}
                                     <img
-                                        src={`https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=40&h=40&fit=crop&auto=format&q=80&seed=${index}`}
+                                        src={
+                                            track.coverImage ||
+                                            `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=40&h=40&fit=crop&auto=format&q=80&seed=${index}`
+                                        }
                                         alt="Album cover"
                                         className="w-10 h-10 rounded object-cover"
                                     />
@@ -208,15 +218,27 @@ export default function QueueDrawer({
                         onPlay={playTrack}
                         onAddToPlaylist={(playlistId, trackId) => {
                             playlistsApi.addTrack(playlistId, trackId);
+                            queryClient.invalidateQueries({
+                                queryKey: ["/api/playlists"],
+                            });
                         }}
                         onDelete={(trackId) => {
                             import("@/lib/api").then(({ tracksApi }) => {
                                 tracksApi.delete(trackId);
                             });
+                            queryClient.invalidateQueries({
+                                queryKey: ["/api/tracks"],
+                            });
                         }}
+                        onEdit={(track) => setEditingTrack(track)}
                         onClose={() => setContextMenu(null)}
                     />
                 )}
+                <TrackEditDialog
+                    track={editingTrack}
+                    open={!!editingTrack}
+                    onOpenChange={(open) => !open && setEditingTrack(null)}
+                />
             </div>
         </aside>
     );

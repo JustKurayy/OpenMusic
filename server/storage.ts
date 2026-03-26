@@ -31,6 +31,11 @@ export interface IStorage {
     getTracksByUser(userId: number): Promise<TrackWithUser[]>;
     getAllTracks(): Promise<TrackWithUser[]>;
     createTrack(track: InsertTrack & { userId: number }): Promise<Track>;
+    updateTrack(
+        id: number,
+        track: Partial<Pick<InsertTrack, "title" | "artist" | "album" | "coverImage">>,
+        userId: number
+    ): Promise<Track | undefined>;
     deleteTrack(id: number, userId: number): Promise<boolean>;
     searchTracks(query: string, userId?: number): Promise<TrackWithUser[]>;
 
@@ -114,6 +119,7 @@ export class DatabaseStorage implements IStorage {
                 title: tracks.title,
                 artist: tracks.artist,
                 album: tracks.album,
+                coverImage: tracks.coverImage,
                 duration: tracks.duration,
                 filename: tracks.filename,
                 filePath: tracks.filePath,
@@ -143,6 +149,7 @@ export class DatabaseStorage implements IStorage {
                 title: tracks.title,
                 artist: tracks.artist,
                 album: tracks.album,
+                coverImage: tracks.coverImage,
                 duration: tracks.duration,
                 filename: tracks.filename,
                 filePath: tracks.filePath,
@@ -159,6 +166,21 @@ export class DatabaseStorage implements IStorage {
     async createTrack(track: InsertTrack & { userId: number }): Promise<Track> {
         const [newTrack] = await db.insert(tracks).values(track).returning();
         return newTrack;
+    }
+
+    async updateTrack(
+        id: number,
+        track: Partial<
+            Pick<InsertTrack, "title" | "artist" | "album" | "coverImage">
+        >,
+        userId: number
+    ): Promise<Track | undefined> {
+        const [updatedTrack] = await db
+            .update(tracks)
+            .set(track)
+            .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
+            .returning();
+        return updatedTrack || undefined;
     }
 
     async deleteTrack(id: number, userId: number): Promise<boolean> {
@@ -181,6 +203,7 @@ export class DatabaseStorage implements IStorage {
                 title: tracks.title,
                 artist: tracks.artist,
                 album: tracks.album,
+                coverImage: tracks.coverImage,
                 duration: tracks.duration,
                 filename: tracks.filename,
                 filePath: tracks.filePath,
@@ -237,6 +260,7 @@ export class DatabaseStorage implements IStorage {
                     title: tracks.title,
                     artist: tracks.artist,
                     album: tracks.album,
+                    coverImage: tracks.coverImage,
                     duration: tracks.duration,
                     filename: tracks.filename,
                     filePath: tracks.filePath,

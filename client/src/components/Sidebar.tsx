@@ -84,9 +84,11 @@ export default function Sidebar() {
                             </span>
                         </div>
                         <div className="hidden items-center gap-1 lg:flex">
-                            <span className="rounded-full p-1 hover:bg-white/10">
-                                <Plus className="h-3.5 w-3.5" />
-                            </span>
+                            <Link href="/create-playlist">
+                                <span className="rounded-full p-1 hover:bg-white/10">
+                                    <Plus className="h-3.5 w-3.5" />
+                                </span>
+                            </Link>
                             <span className="rounded-full p-1 hover:bg-white/10">
                                 <ArrowRight className="h-3.5 w-3.5" />
                             </span>

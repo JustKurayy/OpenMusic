@@ -304,9 +304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     req.file.originalname
                 );
                 const trackData = {
-                    title: req.body.title || metadata.title,
-                    artist: req.body.artist || metadata.artist,
-                    album: req.body.album || metadata.album,
+                    title: metadata.title || req.body.title,
+                    artist: metadata.artist || req.body.artist,
+                    album: metadata.album || req.body.album,
+                    coverImage: metadata.coverImage || req.body.coverImage,
                     duration: metadata.duration,
                     filename: req.file.filename,
                     filePath: req.file.path,
@@ -356,6 +357,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 fs.unlinkSync(safePath);
             }
             res.json({ message: "Track deleted successfully" });
+        } catch (error) {
+            res.status(500).json({ message: "Server error" });
+        }
+    });
+
+    app.put("/api/tracks/:id", authenticateUserOrGuest, async (req, res) => {
+        try {
+            if (!req.user)
+                return res.status(401).json({ message: "Not authenticated" });
+            const trackId = parseInt(req.params.id);
+            const track = await storage.getTrack(trackId);
+            if (!track) {
+                return res.status(404).json({ message: "Track not found" });
+            }
+            if (track.userId !== (req.user as any).id) {
+                return res.status(403).json({ message: "Unauthorized" });
+            }
+
+            const sanitized = {
+                title: typeof req.body.title === "string" ? req.body.title.trim() : undefined,
+                artist: typeof req.body.artist === "string" ? req.body.artist.trim() : undefined,
+                album: typeof req.body.album === "string" ? req.body.album.trim() : undefined,
+                coverImage:
+                    typeof req.body.coverImage === "string"
+                        ? req.body.coverImage.trim() || null
+                        : undefined,
+            };
+
+            if (sanitized.title !== undefined && !sanitized.title) {
+                return res.status(400).json({ message: "Title cannot be empty" });
+            }
+            if (sanitized.artist !== undefined && !sanitized.artist) {
+                return res.status(400).json({ message: "Artist cannot be empty" });
+            }
+
+            const updated = await storage.updateTrack(
+                trackId,
+                sanitized,
+                (req.user as any).id
+            );
+            if (!updated) {
+                return res.status(404).json({ message: "Track not found" });
+            }
+            res.json(updated);
         } catch (error) {
             res.status(500).json({ message: "Server error" });
         }

@@ -5,6 +5,7 @@ export interface ApiTrack {
     title: string;
     artist: string;
     album?: string;
+    coverImage?: string;
     duration: number;
     filename: string;
     createdAt: string;
@@ -78,6 +79,10 @@ export const tracksApi = {
     },
 
     delete: (id: number) => apiRequest("DELETE", `/api/tracks/${id}`),
+    update: (
+        id: number,
+        data: { title?: string; artist?: string; album?: string; coverImage?: string }
+    ) => apiRequest("PUT", `/api/tracks/${id}`, data),
 
     getStreamUrl: (id: number) => `/api/tracks/${id}/stream`,
 };

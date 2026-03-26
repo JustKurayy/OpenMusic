@@ -8,6 +8,7 @@ interface ContextMenuProps {
     onPlay?: (track: any, queue?: any[]) => void;
     onAddToPlaylist?: (playlistId: number, trackId: number) => void;
     onDelete?: (trackId: number) => void;
+    onEdit?: (track: any) => void;
     onClose: () => void;
 }
 
@@ -19,6 +20,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     onPlay,
     onAddToPlaylist,
     onDelete,
+    onEdit,
     onClose,
 }) => {
     const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
@@ -97,6 +99,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                     </div>
                 )}
             </div>
+            <button
+                className="block w-full text-left px-4 py-2 hover:bg-red-600 rounded-lg text-red-400"
+                onClick={() => {
+                    onEdit && onEdit(track);
+                    onClose();
+                }}
+            >
+                Edit details
+            </button>
             <button
                 className="block w-full text-left px-4 py-2 hover:bg-red-600 rounded-lg text-red-400"
                 onClick={() => {

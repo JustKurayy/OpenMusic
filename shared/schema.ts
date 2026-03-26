@@ -28,6 +28,7 @@ export const tracks = pgTable("tracks", {
     title: text("title").notNull(),
     artist: text("artist").notNull(),
     album: text("album"),
+    coverImage: text("cover_image"),
     duration: real("duration").notNull(), // in seconds
     filename: text("filename").notNull(),
     filePath: text("file_path").notNull(),

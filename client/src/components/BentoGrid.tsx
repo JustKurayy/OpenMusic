@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getCountryCode } from "@/lib/getCountryCode";
 import { getStationsByCountry } from "@/lib/radioBrowserApi";
@@ -59,23 +60,23 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
         function checkScroll() {
             setCanScrollRecent(
                 !!recentTracksRef.current &&
-                    recentTracksRef.current.scrollWidth >
-                        recentTracksRef.current.clientWidth
+                recentTracksRef.current.scrollWidth >
+                recentTracksRef.current.clientWidth
             );
             setCanScrollPlaylists(
                 !!playlistsRef.current &&
-                    playlistsRef.current.scrollWidth >
-                        playlistsRef.current.clientWidth
+                playlistsRef.current.scrollWidth >
+                playlistsRef.current.clientWidth
             );
             setCanScrollRadios(
                 !!radiosRef.current &&
-                    radiosRef.current.scrollWidth >
-                        radiosRef.current.clientWidth
+                radiosRef.current.scrollWidth >
+                radiosRef.current.clientWidth
             );
             setCanScrollPlayed(
                 !!recentlyPlayedRef.current &&
-                    recentlyPlayedRef.current.scrollWidth >
-                        recentlyPlayedRef.current.clientWidth
+                recentlyPlayedRef.current.scrollWidth >
+                recentlyPlayedRef.current.clientWidth
             );
         }
         checkScroll();
@@ -177,9 +178,11 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                         className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1"
                     >
                         {recentTracks.map((track, index) => (
-                            <div
+                            <motion.div
                                 key={track.id}
-                                className="flex-shrink-0 w-48 bg-gray-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-4 cursor-pointer group transition-all duration-200 hover:scale-105 relative"
+                                className="flex-shrink-0 w-48 bg-gray-900 bg-opacity-40 hover:bg-opacity-60 rounded-lg p-4 cursor-pointer group transition-all duration-200 relative"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => onTrackClick(track)}
                                 onContextMenu={(e) => {
                                     e.preventDefault();
@@ -220,7 +223,7 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                         {contextMenu && (
                             <ContextMenu
@@ -298,11 +301,11 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                                 onClick={() =>
                                     onTrackClick(
                                         tracks[0] ||
-                                            ({
-                                                id: 1,
-                                                title: playlist.name,
-                                                artist: "Playlist",
-                                            } as any)
+                                        ({
+                                            id: 1,
+                                            title: playlist.name,
+                                            artist: "Playlist",
+                                        } as any)
                                     )
                                 }
                             >

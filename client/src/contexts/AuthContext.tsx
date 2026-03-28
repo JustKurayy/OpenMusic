@@ -26,6 +26,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const response = await fetch("/api/auth/me", {
                 credentials: "include",
             });
+            // 401 means not authenticated (guest mode or no user)
+            if (response.status === 401) {
+                setUser(null);
+                return;
+            }
             if (response.ok) {
                 const userData = await response.json();
                 if (userData && userData.id !== undefined) {

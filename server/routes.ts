@@ -288,9 +288,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (my === "true" && req.user) {
                 tracks = await storage.getTracksByUser((req.user as any).id);
             } else if (search) {
+                // For search, allow all authenticated users to search all tracks
                 tracks = await storage.searchTracks(search as string);
             } else {
-                tracks = await storage.getAllTracks();
+                // Show only current user's tracks, or all tracks if guest
+                if ((req.user as any).isGuest) {
+                    tracks = await storage.getAllTracks();
+                } else {
+                    tracks = await storage.getTracksByUser((req.user as any).id);
+                }
             }
             res.json(tracks);
         } catch (error) {
@@ -436,11 +442,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Playlist routes
     app.get("/api/playlists", authenticateUserOrGuest, async (req, res) => {
         try {
-            if (!req.user)
+            if (!req.user) {
                 return res.status(401).json({ message: "Not authenticated" });
-            const playlists = await storage.getPlaylistsByUser(
-                (req.user as any).id
-            );
+            }
+            // Get current user's playlists, or guest's playlist (by user id 0)
+            const userId = (req.user as any).isGuest ? 0 : (req.user as any).id;
+            const playlists = await storage.getPlaylistsByUser(userId);
             res.json(playlists);
         } catch (error) {
             res.status(500).json({ message: "Server error" });
@@ -455,7 +462,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!playlist) {
                 return res.status(404).json({ message: "Playlist not found" });
             }
-            if (playlist.userId !== (req.user as any).id) {
+            // Allow authenticated users to view any playlist (not just their own)
+            // Guest users can only view their own playlists
+            if (playlist.userId !== (req.user as any).id && (req.user as any).isGuest) {
                 return res.status(403).json({ message: "Unauthorized" });
             }
             res.json(playlist);

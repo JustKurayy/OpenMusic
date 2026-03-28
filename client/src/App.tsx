@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,6 +21,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Update queryClient to include auth header
 queryClient.setDefaultOptions({
@@ -49,11 +50,17 @@ queryClient.setDefaultOptions({
 function AppContent() {
     const { user, isLoading } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
+    const [location] = useLocation();
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-spotify-black flex items-center justify-center">
-                <div className="text-spotify-white">Loading...</div>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-spotify-green">
+                        <Music className="h-6 w-6 text-black" />
+                    </div>
+                    <span className="text-2xl font-bold tracking-tight">OpenMusic</span>
+                </div>
             </div>
         );
     }
@@ -70,17 +77,27 @@ function AppContent() {
     return (
         <Layout>
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Switch>
-                    <Route path="/" component={Home} />
-                    <Route path="/library" component={Library} />
-                    <Route path="/upload" component={Upload} />
-                    <Route path="/radio" component={Radio} />
-                    <Route path="/playlist/:id" component={Playlist} />
-                    <Route path="/search" component={SearchPage} />
-                    <Route path="/create-playlist" component={CreatePlaylist} />
-                    <Route path="/album/:albumName" component={Album} />
-                    <Route component={NotFound} />
-                </Switch>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={location}
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <Switch>
+                            <Route path="/" component={Home} />
+                            <Route path="/library" component={Library} />
+                            <Route path="/upload" component={Upload} />
+                            <Route path="/radio" component={Radio} />
+                            <Route path="/playlist/:id" component={Playlist} />
+                            <Route path="/search" component={SearchPage} />
+                            <Route path="/create-playlist" component={CreatePlaylist} />
+                            <Route path="/album/:albumName" component={Album} />
+                            <Route component={NotFound} />
+                        </Switch>
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </Layout>
     );

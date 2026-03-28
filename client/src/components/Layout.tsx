@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MusicPlayer from "@/components/MusicPlayer";
@@ -15,9 +16,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <TopBar />
             <div className="flex min-h-0 flex-1 gap-2">
                 <Sidebar />
-                <main className="spotify-panel spotify-main-gradient min-h-0 flex-1 overflow-y-auto">
+                <motion.main
+                    className="spotify-panel spotify-main-gradient min-h-0 flex-1 overflow-y-auto"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                >
                     {showLyrics ? <Lyrics /> : children}
-                </main>
+                </motion.main>
                 <QueueDrawer
                     isOpen={queueOpen}
                     onClose={() => setQueueOpen(false)}

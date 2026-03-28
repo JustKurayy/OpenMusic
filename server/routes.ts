@@ -13,6 +13,7 @@ import {
 import { upload, extractMetadata, extractMetadataPreview, streamAudio } from "./upload";
 import {
     insertTrackSchema,
+    updateTrackSchema,
     insertPlaylistSchema,
     insertPlaylistTrackSchema,
 } from "@shared/schema";
@@ -102,7 +103,7 @@ function csrfProtection(
     const isTrustedOrigin =
         (requestOrigin && trustedOrigins.has(requestOrigin)) ||
         (requestReferer &&
-            [...trustedOrigins].some((trusted) =>
+            Array.from(trustedOrigins).some((trusted) =>
                 requestReferer.startsWith(trusted)
             )) ||
         (requestOrigin && requestOrigin === hostOrigin);
@@ -284,23 +285,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get("/api/tracks", authenticateUserOrGuest, async (req, res) => {
         try {
             const { search, my } = req.query;
+            const user = req.user;
+
+            // Handle undefined user
+            if (!user) {
+                // No authenticated user - return empty array or handle as guest
+                // For guest mode, return all tracks
+                return res.json([]);
+            }
+
             let tracks;
-            if (my === "true" && req.user) {
-                tracks = await storage.getTracksByUser((req.user as any).id);
+            if (my === "true") {
+                tracks = await storage.getTracksByUser((user as any).id);
             } else if (search) {
                 // For search, allow all authenticated users to search all tracks
                 tracks = await storage.searchTracks(search as string);
             } else {
                 // Show only current user's tracks, or all tracks if guest
-                if ((req.user as any).isGuest) {
+                if ((user as any).isGuest) {
                     tracks = await storage.getAllTracks();
                 } else {
-                    tracks = await storage.getTracksByUser((req.user as any).id);
+                    tracks = await storage.getTracksByUser((user as any).id);
                 }
             }
             res.json(tracks);
         } catch (error) {
-            res.status(500).json({ message: "Server error" });
+            console.error("[API /api/tracks] Error:", error);
+            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
         }
     });
 
@@ -312,7 +323,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             res.json(track);
         } catch (error) {
-            res.status(500).json({ message: "Server error" });
+            console.error("[API /api/tracks/:id] Error:", error);
+            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+        }
+    });
+
+    app.put("/api/tracks/:id", authenticateUserOrGuest, async (req, res) => {
+        try {
+            if (!req.user || (req.user as any).isGuest) {
+                return res.status(401).json({ message: "Not authenticated" });
+            }
+
+            const trackId = parseInt(req.params.id);
+            const validatedData = updateTrackSchema.parse(req.body);
+            const updatedTrack = await storage.updateTrack(
+                trackId,
+                validatedData,
+                (req.user as any).id
+            );
+
+            if (!updatedTrack) {
+                return res.status(404).json({ message: "Track not found" });
+            }
+
+            res.json(updatedTrack);
+        } catch (error: any) {
+            res.status(400).json({
+                message: "Failed to update track",
+                error: error.message,
+            });
         }
     });
 
@@ -393,7 +432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             res.json({ message: "Track deleted successfully" });
         } catch (error) {
-            res.status(500).json({ message: "Server error" });
+            console.error("[API /api/tracks/:id] Delete Error:", error);
+            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
         }
     });
 
@@ -408,7 +448,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 streamAudio(track.filePath, req, res);
             } catch (error) {
-                res.status(500).json({ message: "Server error" });
+                console.error("[API /api/tracks/:id/stream] Error:", error);
+                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
             }
         }
     );
@@ -434,7 +475,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 res.setHeader("Cache-Control", "public, max-age=31536000");
                 fs.createReadStream(safePath).pipe(res);
             } catch (error) {
-                res.status(500).json({ message: "Server error" });
+                console.error("[API /api/tracks/:id/artwork] Error:", error);
+                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
             }
         }
     );
@@ -450,7 +492,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const playlists = await storage.getPlaylistsByUser(userId);
             res.json(playlists);
         } catch (error) {
-            res.status(500).json({ message: "Server error" });
+            console.error("[API /api/playlists] Error:", error);
+            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
         }
     });
 
@@ -469,7 +512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             res.json(playlist);
         } catch (error) {
-            res.status(500).json({ message: "Server error" });
+            console.error("[API /api/playlists/:id] Error:", error);
+            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
         }
     });
 
@@ -536,7 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 res.json({ message: "Playlist deleted successfully" });
             } catch (error) {
-                res.status(500).json({ message: "Server error" });
+                console.error("[API /api/playlists/:id] Delete Error:", error);
+                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
             }
         }
     );
@@ -567,6 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     await storage.addTrackToPlaylist(validatedData);
                 res.status(201).json(playlistTrack);
             } catch (error: any) {
+                console.error("[API /api/playlists/:id/tracks] Error:", error);
                 res.status(400).json({
                     message: "Failed to add track to playlist",
                     error: error.message,
@@ -598,7 +644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 res.json({ message: "Track removed from playlist" });
             } catch (error) {
-                res.status(500).json({ message: "Server error" });
+                console.error("[API /api/playlists/:playlistId/tracks/:trackId] Error:", error);
+                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
             }
         }
     );
@@ -631,7 +678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 res.json({ message: "Playlist reordered successfully" });
             } catch (error) {
-                res.status(500).json({ message: "Server error" });
+                console.error("[API /api/playlists/:id/reorder] Error:", error);
+                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
             }
         }
     );

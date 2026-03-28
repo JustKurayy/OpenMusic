@@ -40,6 +40,9 @@ export const getQueryFn: <T>(options: {
         if (unauthorizedBehavior === "returnNull" && res.status === 401) {
             return null;
         }
+        if (!res.ok) {
+            console.error(`[API Error] ${queryKey.join("")}: Status ${res.status}`, await res.text());
+        }
         await throwIfResNotOk(res);
         return await res.json();
     };

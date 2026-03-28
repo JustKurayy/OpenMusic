@@ -272,7 +272,7 @@ export default function Upload() {
             </Card>
 
             {/* Upload queue */}
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
                 {uploadFiles.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}

@@ -1,13 +1,14 @@
 import { Clock, MoreHorizontal, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/contexts/PlayerContext";
-import type { ApiTrack } from "@/lib/api";
+import { tracksApi, type ApiTrack } from "@/lib/api";
 
 interface TrackListProps {
     tracks: ApiTrack[];
     showHeader?: boolean;
     showAlbum?: boolean;
     showDateAdded?: boolean;
+    onEditTrack?: (track: ApiTrack) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -35,6 +36,7 @@ export default function TrackList({
     showHeader = true,
     showAlbum = true,
     showDateAdded = true,
+    onEditTrack,
 }: TrackListProps) {
     const { playTrack, currentTrack, isPlaying } = usePlayer();
 
@@ -60,12 +62,18 @@ export default function TrackList({
                         className={`flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? "bg-spotify-green bg-opacity-10" : ""}`}
                         onClick={() => handlePlayTrack(track)}
                     >
-                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center overflow-hidden">
-                            <img
-                                src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=40&h=40&fit=crop`}
-                                alt="Track cover"
-                                className="w-8 h-8 object-cover rounded"
-                            />
+                        <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden bg-zinc-800">
+                            {track.coverArt ? (
+                                <img
+                                    src={tracksApi.getArtworkUrl(track.id)}
+                                    alt={track.title}
+                                    className="w-8 h-8 object-cover rounded"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center overflow-hidden">
+                                    <Play className="w-4 h-4 text-white" />
+                                </div>
+                            )}
                         </div>
                         <div className="flex flex-col min-w-0 flex-1">
                             <span
@@ -84,6 +92,12 @@ export default function TrackList({
                             variant="ghost"
                             size="sm"
                             className="opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEditTrack) {
+                                    onEditTrack(track);
+                                }
+                            }}
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </Button>

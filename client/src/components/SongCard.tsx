@@ -124,10 +124,8 @@ export default function SongCard({
     if (href) {
         return (
             <div className={cn("cursor-pointer", className)}>
-                <Link href={href}>
-                    <a>
-                        <CardInner {...rest} />
-                    </a>
+                <Link href={href} className="block">
+                    <CardInner {...rest} />
                 </Link>
             </div>
         );

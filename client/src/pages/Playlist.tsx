@@ -29,6 +29,7 @@ export default function Playlist() {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
+    const [editCoverImage, setEditCoverImage] = useState("");
     const [dominantColor, setDominantColor] = useState("rgb(83, 83, 83)");
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -116,8 +117,11 @@ export default function Playlist() {
     }, [playlist?.coverImage]);
 
     const updateMutation = useMutation({
-        mutationFn: (data: { name: string; description: string }) =>
-            playlistsApi.update(parseInt(id!), data),
+        mutationFn: (data: {
+            name: string;
+            description?: string;
+            coverImage?: string | null;
+        }) => playlistsApi.update(parseInt(id!), data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/playlists"] });
             queryClient.invalidateQueries({ queryKey: ["/api/playlists", id] });
@@ -159,6 +163,7 @@ export default function Playlist() {
         if (playlist) {
             setEditName(playlist.name);
             setEditDescription(playlist.description || "");
+            setEditCoverImage(playlist.coverImage || "");
             setIsEditing(true);
         }
     };
@@ -167,7 +172,8 @@ export default function Playlist() {
         if (editName.trim()) {
             updateMutation.mutate({
                 name: editName.trim(),
-                description: editDescription.trim(),
+                description: editDescription.trim() || undefined,
+                coverImage: editCoverImage.trim() || null,
             });
         }
     };
@@ -290,6 +296,14 @@ export default function Playlist() {
                                     }
                                     className="text-lg text-gray-300 bg-transparent border-none p-0 placeholder-gray-500 focus:ring-0"
                                     placeholder="Add a description"
+                                />
+                                <Input
+                                    value={editCoverImage}
+                                    onChange={(e) =>
+                                        setEditCoverImage(e.target.value)
+                                    }
+                                    className="text-sm text-gray-300 bg-transparent border-none p-0 placeholder-gray-500 focus:ring-0"
+                                    placeholder="Cover image URL"
                                 />
                                 <div className="flex space-x-3 pt-4">
                                     <Button

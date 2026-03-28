@@ -17,7 +17,7 @@ import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
 import Radio from "@/pages/Radio";
 import Album from "@/pages/Album";
-import { ChevronLeft, ChevronRight, Music, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -54,13 +54,8 @@ function AppContent() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-spotify-green">
-                        <Music className="h-6 w-6 text-black" />
-                    </div>
-                    <span className="text-2xl font-bold tracking-tight">OpenMusic</span>
-                </div>
+            <div className="min-h-screen bg-spotify-black flex items-center justify-center">
+                <div className="text-spotify-white">Loading...</div>
             </div>
         );
     }
@@ -77,7 +72,7 @@ function AppContent() {
     return (
         <Layout>
             <div className="flex-1 flex flex-col overflow-hidden">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" initial={false}>
                     <motion.div
                         key={location}
                         initial={{ opacity: 0, x: 50 }}

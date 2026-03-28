@@ -18,7 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Sidebar />
                 <motion.main
                     className="spotify-panel spotify-main-gradient min-h-0 flex-1 overflow-y-auto"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}

@@ -107,6 +107,16 @@ export const insertTrackSchema = createInsertSchema(tracks).omit({
     createdAt: true,
 });
 
+export const updateTrackSchema = insertTrackSchema
+    .partial()
+    .omit({
+        duration: true,
+        filename: true,
+        filePath: true,
+        mimeType: true,
+        fileSize: true,
+    });
+
 export const insertPlaylistSchema = createInsertSchema(playlists).omit({
     id: true,
     userId: true,

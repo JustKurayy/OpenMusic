@@ -87,6 +87,14 @@ export const tracksApi = {
         });
     },
 
+    update: (id: number, data: Partial<{
+        title: string;
+        artist: string;
+        album?: string | null;
+        trackNumber?: number | null;
+        coverArt?: string | null;
+    }>) => apiRequest("PUT", `/api/tracks/${id}`, data),
+
     delete: (id: number) => apiRequest("DELETE", `/api/tracks/${id}`),
 
     getStreamUrl: (id: number) => `/api/tracks/${id}/stream`,
@@ -103,8 +111,10 @@ export const playlistsApi = {
     create: (data: { name: string; description?: string }) =>
         apiRequest("POST", "/api/playlists", data),
 
-    update: (id: number, data: { name?: string; description?: string }) =>
-        apiRequest("PUT", `/api/playlists/${id}`, data),
+    update: (
+        id: number,
+        data: { name?: string; description?: string; coverImage?: string | null }
+    ) => apiRequest("PUT", `/api/playlists/${id}`, data),
 
     delete: (id: number) => apiRequest("DELETE", `/api/playlists/${id}`),
 

@@ -31,6 +31,7 @@ export interface IStorage {
     getTracksByUser(userId: number): Promise<TrackWithUser[]>;
     getAllTracks(): Promise<TrackWithUser[]>;
     createTrack(track: InsertTrack & { userId: number }): Promise<Track>;
+    updateTrack(id: number, track: Partial<InsertTrack>, userId: number): Promise<Track | undefined>;
     deleteTrack(id: number, userId: number): Promise<boolean>;
     searchTracks(query: string, userId?: number): Promise<TrackWithUser[]>;
 
@@ -165,6 +166,19 @@ export class DatabaseStorage implements IStorage {
         return newTrack;
     }
 
+    async updateTrack(
+        id: number,
+        track: Partial<InsertTrack>,
+        userId: number
+    ): Promise<Track | undefined> {
+        const [updatedTrack] = await db
+            .update(tracks)
+            .set(track)
+            .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
+            .returning();
+        return updatedTrack || undefined;
+    }
+
     async deleteTrack(id: number, userId: number): Promise<boolean> {
         const result = await db
             .delete(tracks)
@@ -178,7 +192,7 @@ export class DatabaseStorage implements IStorage {
     ): Promise<TrackWithUser[]> {
         const searchQuery = `%${query.toLowerCase()}%`;
 
-        let dbQuery = db
+        const dbQuery = db
             .select({
                 id: tracks.id,
                 userId: tracks.userId,
@@ -199,7 +213,9 @@ export class DatabaseStorage implements IStorage {
             .innerJoin(users, eq(tracks.userId, users.id));
 
         if (userId) {
-            dbQuery = dbQuery.where(eq(tracks.userId, userId));
+            return await dbQuery
+                .where(eq(tracks.userId, userId))
+                .orderBy(desc(tracks.createdAt));
         }
 
         return await dbQuery.orderBy(desc(tracks.createdAt));

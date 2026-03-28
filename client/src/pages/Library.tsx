@@ -11,6 +11,14 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import TrackList from "@/components/TrackList";
 import SongCard from "@/components/SongCard";
 import MediaContextMenu from "@/components/MediaContextMenu";
@@ -61,6 +69,12 @@ export default function Library() {
     const [viewMode, setViewMode] = useState<ViewMode>("grid");
     const [filter, setFilter] = useState<FilterType>("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [editingTrack, setEditingTrack] = useState<ApiTrack | null>(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [editArtist, setEditArtist] = useState("");
+    const [editAlbum, setEditAlbum] = useState("");
+    const [editTrackNumber, setEditTrackNumber] = useState<string>("");
+    const [editCoverArt, setEditCoverArt] = useState("");
 
     const { data: tracks = [], isLoading: tracksLoading } = useQuery<ApiTrack[]>({
         queryKey: ["/api/tracks"],
@@ -85,9 +99,35 @@ export default function Library() {
         mutationFn: (id: number) => tracksApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/tracks"] });
+            queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/playlists" });
             toast({ title: "Track deleted" });
         },
         onError: () => toast({ title: "Failed to delete track", variant: "destructive" }),
+    });
+
+    const editTrackMutation = useMutation({
+        mutationFn: ({
+            id,
+            data,
+        }: {
+            id: number;
+            data: Partial<{
+                title: string;
+                artist: string;
+                album?: string | null;
+                trackNumber?: number | null;
+                coverArt?: string | null;
+            }>;
+        }) => tracksApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/tracks"] });
+            queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/playlists" });
+            setEditingTrack(null);
+            toast({
+                title: "Track updated",
+            });
+        },
+        onError: () => toast({ title: "Failed to update track", variant: "destructive" }),
     });
 
     const isLoading = tracksLoading || playlistsLoading;
@@ -148,6 +188,36 @@ export default function Library() {
 
     const isEmpty = tracks.length === 0 && playlists.length === 0;
 
+    const openTrackEditor = (track: ApiTrack) => {
+        setEditingTrack(track);
+        setEditTitle(track.title);
+        setEditArtist(track.artist);
+        setEditAlbum(track.album ?? "");
+        setEditTrackNumber(track.trackNumber?.toString() ?? "");
+        setEditCoverArt(track.coverArt ?? "");
+    };
+
+    const closeTrackEditor = () => {
+        setEditingTrack(null);
+    };
+
+    const saveTrackEdits = () => {
+        if (!editingTrack) return;
+
+        editTrackMutation.mutate({
+            id: editingTrack.id,
+            data: {
+                title: editTitle.trim(),
+                artist: editArtist.trim(),
+                album: editAlbum.trim() || null,
+                trackNumber: editTrackNumber.trim()
+                    ? Number(editTrackNumber.trim())
+                    : null,
+                coverArt: editCoverArt.trim() || null,
+            },
+        });
+    };
+
     if (isLoading) {
         return (
             <div className="flex-1 overflow-y-auto bg-gradient-to-b from-zinc-900 to-black p-6">
@@ -180,12 +250,10 @@ export default function Library() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-3xl font-bold text-white">Your Library</h1>
-                    <Link href="/create-playlist">
-                        <a>
-                            <button className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-all duration-200">
-                                <Plus className="w-6 h-6" />
-                            </button>
-                        </a>
+                    <Link href="/create-playlist" className="inline-flex">
+                        <button className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-all duration-200">
+                            <Plus className="w-6 h-6" />
+                        </button>
                     </Link>
                 </div>
 
@@ -200,16 +268,18 @@ export default function Library() {
                             music collection.
                         </p>
                         <div className="flex gap-4 justify-center">
-                            <Link href="/upload">
-                                <a className="inline-flex items-center px-8 py-4 bg-green-500 text-black font-bold rounded-full hover:bg-green-400 hover:scale-105 transition-all duration-200">
-                                    <Plus className="w-5 h-5 mr-2" />
-                                    Upload Music
-                                </a>
+                            <Link
+                                href="/upload"
+                                className="inline-flex items-center px-8 py-4 bg-green-500 text-black font-bold rounded-full hover:bg-green-400 hover:scale-105 transition-all duration-200"
+                            >
+                                <Plus className="w-5 h-5 mr-2" />
+                                Upload Music
                             </Link>
-                            <Link href="/create-playlist">
-                                <a className="inline-flex items-center px-8 py-4 border-2 border-zinc-500 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all duration-200">
-                                    Create Playlist
-                                </a>
+                            <Link
+                                href="/create-playlist"
+                                className="inline-flex items-center px-8 py-4 border-2 border-zinc-500 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all duration-200"
+                            >
+                                Create Playlist
                             </Link>
                         </div>
                     </div>
@@ -283,7 +353,7 @@ export default function Library() {
                                     {filter === "all" && (
                                         <h2 className="text-2xl font-bold text-white mb-5">Albums</h2>
                                     )}
-                                    <AnimatePresence mode="wait">
+                                    <AnimatePresence mode="wait" initial={false}>
                                         {viewMode === "grid" ? (
                                             <motion.div
                                                 key="albums-grid"
@@ -344,31 +414,32 @@ export default function Library() {
                                                                 },
                                                             ]}
                                                         >
-                                                            <Link href={`/album/${encodeURIComponent(album.name)}`}>
-                                                                <a className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800 group transition-colors cursor-pointer">
-                                                                    <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden bg-zinc-700 flex items-center justify-center">
-                                                                        {album.coverTrackId ? (
-                                                                            <img
-                                                                                src={tracksApi.getArtworkUrl(album.coverTrackId)}
-                                                                                alt={album.name}
-                                                                                className="w-full h-full object-cover"
-                                                                            />
-                                                                        ) : (
-                                                                            <Disc3 className="w-6 h-6 text-zinc-400" />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-semibold text-white truncate group-hover:text-green-400 transition-colors">
-                                                                            {album.name}
-                                                                        </p>
-                                                                        <p className="text-sm text-zinc-400 truncate">
-                                                                            Album • {album.artist}
-                                                                        </p>
-                                                                    </div>
-                                                                    <span className="text-xs text-zinc-500">
-                                                                        {album.tracks.length} songs
-                                                                    </span>
-                                                                </a>
+                                                            <Link
+                                                                href={`/album/${encodeURIComponent(album.name)}`}
+                                                                className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800 group transition-colors cursor-pointer"
+                                                            >
+                                                                <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden bg-zinc-700 flex items-center justify-center">
+                                                                    {album.coverTrackId ? (
+                                                                        <img
+                                                                            src={tracksApi.getArtworkUrl(album.coverTrackId)}
+                                                                            alt={album.name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <Disc3 className="w-6 h-6 text-zinc-400" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-semibold text-white truncate group-hover:text-green-400 transition-colors">
+                                                                        {album.name}
+                                                                    </p>
+                                                                    <p className="text-sm text-zinc-400 truncate">
+                                                                        Album • {album.artist}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="text-xs text-zinc-500">
+                                                                    {album.tracks.length} songs
+                                                                </span>
                                                             </Link>
                                                         </MediaContextMenu>
                                                     </motion.div>
@@ -385,7 +456,7 @@ export default function Library() {
                                     {filter === "all" && (
                                         <h2 className="text-2xl font-bold text-white mb-5">Playlists</h2>
                                     )}
-                                    <AnimatePresence mode="wait">
+                                    <AnimatePresence mode="wait" initial={false}>
                                         {viewMode === "grid" ? (
                                             <motion.div
                                                 key="playlists-grid"
@@ -455,28 +526,29 @@ export default function Library() {
                                                                 },
                                                             ]}
                                                         >
-                                                            <Link href={`/playlist/${playlist.id}`}>
-                                                                <a className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800 group transition-colors cursor-pointer">
-                                                                    <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden bg-gradient-to-br from-purple-700 to-blue-800 flex items-center justify-center">
-                                                                        {playlist.coverImage ? (
-                                                                            <img
-                                                                                src={playlist.coverImage}
-                                                                                alt={playlist.name}
-                                                                                className="w-full h-full object-cover"
-                                                                            />
-                                                                        ) : (
-                                                                            <ListMusic className="w-6 h-6 text-white" />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-semibold text-white truncate group-hover:text-green-400 transition-colors">
-                                                                            {playlist.name}
-                                                                        </p>
-                                                                        <p className="text-sm text-zinc-400 truncate">
-                                                                            Playlist • {playlist.user?.name ?? "Unknown"}
-                                                                        </p>
-                                                                    </div>
-                                                                </a>
+                                                            <Link
+                                                                href={`/playlist/${playlist.id}`}
+                                                                className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800 group transition-colors cursor-pointer"
+                                                            >
+                                                                <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden bg-gradient-to-br from-purple-700 to-blue-800 flex items-center justify-center">
+                                                                    {playlist.coverImage ? (
+                                                                        <img
+                                                                            src={playlist.coverImage}
+                                                                            alt={playlist.name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <ListMusic className="w-6 h-6 text-white" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-semibold text-white truncate group-hover:text-green-400 transition-colors">
+                                                                        {playlist.name}
+                                                                    </p>
+                                                                    <p className="text-sm text-zinc-400 truncate">
+                                                                        Playlist • {playlist.user?.name ?? "Unknown"}
+                                                                    </p>
+                                                                </div>
                                                             </Link>
                                                         </MediaContextMenu>
                                                     </motion.div>
@@ -529,7 +601,11 @@ export default function Library() {
                                                 <span>Album</span>
                                                 <Clock className="w-3.5 h-3.5 justify-self-end" />
                                             </div>
-                                            <TrackList tracks={filteredAllTracks} showHeader={false} />
+                                            <TrackList
+                                                tracks={filteredAllTracks}
+                                                showHeader={false}
+                                                onEditTrack={openTrackEditor}
+                                            />
                                         </div>
                                     )}
                                 </section>
@@ -583,6 +659,7 @@ export default function Library() {
                                                 tracks={filteredLooseTracks}
                                                 showHeader={false}
                                                 showAlbum={false}
+                                                onEditTrack={openTrackEditor}
                                             />
                                         </div>
                                     )}
@@ -608,6 +685,63 @@ export default function Library() {
                     </>
                 )}
             </div>
+            <Dialog open={Boolean(editingTrack)} onOpenChange={(open) => { if (!open) closeTrackEditor(); }}>
+                <DialogContent className="bg-[#121212] border border-white/10">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">
+                            Edit Track Metadata
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <Input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="Title"
+                            className="bg-[#1f1f1f] border-white/10 text-white"
+                        />
+                        <Input
+                            value={editArtist}
+                            onChange={(e) => setEditArtist(e.target.value)}
+                            placeholder="Artist"
+                            className="bg-[#1f1f1f] border-white/10 text-white"
+                        />
+                        <Input
+                            value={editAlbum}
+                            onChange={(e) => setEditAlbum(e.target.value)}
+                            placeholder="Album"
+                            className="bg-[#1f1f1f] border-white/10 text-white"
+                        />
+                        <Input
+                            type="number"
+                            value={editTrackNumber}
+                            onChange={(e) => setEditTrackNumber(e.target.value)}
+                            placeholder="Track Number"
+                            className="bg-[#1f1f1f] border-white/10 text-white"
+                        />
+                        <Input
+                            value={editCoverArt}
+                            onChange={(e) => setEditCoverArt(e.target.value)}
+                            placeholder="Server artwork path"
+                            className="bg-[#1f1f1f] border-white/10 text-white"
+                        />
+                    </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={closeTrackEditor}
+                            className="text-white"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={saveTrackEdits}
+                            disabled={editTrackMutation.isPending}
+                        >
+                            {editTrackMutation.isPending ? "Saving..." : "Save"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </motion.div>
     );
 }

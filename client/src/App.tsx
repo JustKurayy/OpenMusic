@@ -17,7 +17,7 @@ import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
 import Radio from "@/pages/Radio";
 import Album from "@/pages/Album";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Music, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";

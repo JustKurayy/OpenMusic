@@ -1,6 +1,6 @@
 import { usePlayer } from "@/contexts/PlayerContext";
 import { ContextMenu } from "@/components/ui/ContextMenu";
-import { playlistsApi } from "@/lib/api";
+import { playlistsApi, tracksApi } from "@/lib/api";
 import { useEffect } from "react";
 import { X, Clock, MoreHorizontal, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,9 +62,16 @@ export default function QueueDrawer({
                             <div className="flex items-center space-x-3">
                                 <div className="relative">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=48&h=48&fit=crop&auto=format&q=80`}
+                                        src={
+                                            currentTrack?.coverArt
+                                                ? tracksApi.getArtworkUrl(currentTrack.id)
+                                                : `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=48&h=48&fit=crop&auto=format&q=80`
+                                        }
                                         alt="Album cover"
                                         className="w-12 h-12 rounded object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.src = `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=48&h=48&fit=crop&auto=format&q=80`;
+                                        }}
                                     />
                                     <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center">
                                         {isPlaying ? (
@@ -167,9 +174,16 @@ export default function QueueDrawer({
                                     </div>
                                     {/* Album Art */}
                                     <img
-                                        src={`https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=40&h=40&fit=crop&auto=format&q=80&seed=${index}`}
+                                        src={
+                                            track.coverArt
+                                                ? tracksApi.getArtworkUrl(track.id)
+                                                : `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=40&h=40&fit=crop&auto=format&q=80&seed=${index}`
+                                        }
                                         alt="Album cover"
                                         className="w-10 h-10 rounded object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.src = `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=40&h=40&fit=crop&auto=format&q=80&seed=${index}`;
+                                        }}
                                     />
                                     {/* Track Info */}
                                     <div className="flex-1 min-w-0">

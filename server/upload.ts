@@ -57,15 +57,23 @@ const fileFilter = (
     file: Express.Multer.File,
     cb: multer.FileFilterCallback
 ) => {
-    const allowedMimes = ["audio/mpeg", "audio/wav", "audio/mp3"];
-    const allowedExts = [".mp3", ".wav"];
+    const allowedMimes = [
+        "audio/mpeg",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/vnd.wave",
+        "audio/mp3",
+        "audio/flac",
+        "audio/x-flac",
+    ];
+    const allowedExts = [".mp3", ".wav", ".flac"];
 
     const ext = path.extname(file.originalname).toLowerCase();
 
     if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error("Only .mp3 and .wav files are allowed"));
+        cb(new Error("Only .mp3, .wav, and .flac files are allowed"));
     }
 };
 
@@ -95,11 +103,22 @@ export async function extractMetadata(filePath: string, originalName: string) {
             await writeFile(coverArtPath, Buffer.from(picture.data));
         }
 
+        const artist =
+            metadata.common.artist ||
+            (Array.isArray(metadata.common.artists)
+                ? metadata.common.artists.join(", ")
+                : undefined) ||
+            "Unknown Artist";
+        const album =
+            metadata.common.album || metadata.common.albumartist || undefined;
+        const trackNumber =
+            metadata.common.track?.no || metadata.common.disk?.no || undefined;
+
         return {
             title: metadata.common.title || path.parse(originalName).name,
-            artist: metadata.common.artist || "Unknown Artist",
-            album: metadata.common.album || undefined,
-            trackNumber: metadata.common.track?.no || undefined,
+            artist,
+            album,
+            trackNumber,
             duration: metadata.format.duration || 0,
             coverArtPath,
         };
@@ -134,11 +153,22 @@ export async function extractMetadataPreview(filePath: string, originalName: str
             coverArtDataUrl = `data:${picture.format};base64,${b64}`;
         }
 
+        const artist =
+            metadata.common.artist ||
+            (Array.isArray(metadata.common.artists)
+                ? metadata.common.artists.join(", ")
+                : undefined) ||
+            "";
+        const album =
+            metadata.common.album || metadata.common.albumartist || "";
+        const trackNumber =
+            metadata.common.track?.no ?? metadata.common.disk?.no ?? undefined;
+
         return {
             title: metadata.common.title || path.parse(originalName).name,
-            artist: metadata.common.artist || "",
-            album: metadata.common.album || "",
-            trackNumber: metadata.common.track?.no ?? undefined,
+            artist,
+            album,
+            trackNumber,
             coverArtDataUrl,
         };
     } catch (error) {

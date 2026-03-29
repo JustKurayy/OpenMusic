@@ -195,9 +195,16 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                             >
                                 <div className="relative mb-4">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop&auto=format&q=80&seed=${index}`}
+                                        src={
+                                            track.coverArt
+                                                ? tracksApi.getArtworkUrl(track.id)
+                                                : `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop&auto=format&q=80&seed=${index}`
+                                        }
                                         alt={track.title}
                                         className="w-full aspect-square rounded-lg object-cover shadow-lg"
+                                        onError={(e) => {
+                                            e.currentTarget.src = `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop&auto=format&q=80&seed=${index}`;
+                                        }}
                                     />
                                     <div className="absolute top-2 left-2 bg-green-500 text-black text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
                                         <Upload className="w-3 h-3" />
@@ -493,9 +500,16 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                             >
                                 <div className="relative mb-4">
                                     <img
-                                        src={`https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`}
+                                        src={
+                                            track.coverArt
+                                                ? tracksApi.getArtworkUrl(track.id)
+                                                : `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`
+                                        }
                                         alt={track.title}
                                         className="w-full aspect-square rounded-lg object-cover shadow-lg"
+                                        onError={(e) => {
+                                            e.currentTarget.src = `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`;
+                                        }}
                                     />
                                     <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
                                         <Clock className="w-3 h-3" />

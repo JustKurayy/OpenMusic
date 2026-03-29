@@ -232,56 +232,36 @@ export class DatabaseStorage implements IStorage {
                 coverImage: playlists.coverImage,
                 createdAt: playlists.createdAt,
                 updatedAt: playlists.updatedAt,
-                user: {
-                    id: users.id,
-                    googleId: users.googleId,
-                    email: users.email,
-                    name: users.name,
-                    avatar: users.avatar,
-                    createdAt: users.createdAt,
-                },
+                user: users,
             })
             .from(playlists)
             .innerJoin(users, eq(playlists.userId, users.id))
             .where(eq(playlists.id, id));
         if (!playlist) return undefined;
 
-        const playlistTracksData = await db
+        const playlistTracksRaw = await db
             .select({
                 id: playlistTracks.id,
                 playlistId: playlistTracks.playlistId,
                 trackId: playlistTracks.trackId,
                 position: playlistTracks.position,
                 addedAt: playlistTracks.addedAt,
-                track: {
-                    id: tracks.id,
-                    userId: tracks.userId,
-                    title: tracks.title,
-                    artist: tracks.artist,
-                    album: tracks.album,
-                    trackNumber: tracks.trackNumber,
-                    coverArt: tracks.coverArt,
-                    duration: tracks.duration,
-                    filename: tracks.filename,
-                    filePath: tracks.filePath,
-                    mimeType: tracks.mimeType,
-                    fileSize: tracks.fileSize,
-                    createdAt: tracks.createdAt,
-                    user: {
-                        id: users.id,
-                        googleId: users.googleId,
-                        email: users.email,
-                        name: users.name,
-                        avatar: users.avatar,
-                        createdAt: users.createdAt,
-                    },
-                },
+                track: tracks,
+                user: users,
             })
             .from(playlistTracks)
             .innerJoin(tracks, eq(playlistTracks.trackId, tracks.id))
             .innerJoin(users, eq(tracks.userId, users.id))
             .where(eq(playlistTracks.playlistId, id))
             .orderBy(asc(playlistTracks.position));
+
+        const playlistTracksData = playlistTracksRaw.map((row) => ({
+            ...row,
+            track: {
+                ...row.track,
+                user: row.user,
+            },
+        }));
 
         return {
             ...playlist,

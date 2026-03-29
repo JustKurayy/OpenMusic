@@ -1,3 +1,4 @@
+import { tracksApi } from "@/lib/api";
 import { usePlayer } from "@/contexts/PlayerContext";
 import {
     Heart,
@@ -247,9 +248,16 @@ export default function MusicPlayer({
                     ) : (
                         <div className="relative group cursor-pointer">
                             <img
-                                src={`https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=56&h=56&fit=crop`}
+                                src={
+                                    currentTrack?.coverArt
+                                        ? tracksApi.getArtworkUrl(currentTrack.id)
+                                        : `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=56&h=56&fit=crop`
+                                }
                                 alt="Album cover"
                                 className="w-14 h-14 rounded-md object-cover shadow-lg"
+                                onError={(e) => {
+                                    e.currentTarget.src = `https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=56&h=56&fit=crop`;
+                                }}
                             />
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-md transition-all duration-200 flex items-center justify-center">
                                 <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />

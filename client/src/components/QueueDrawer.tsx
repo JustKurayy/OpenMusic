@@ -36,7 +36,7 @@ export default function QueueDrawer({
     };
 
     return (
-        <aside className="h-full w-80 popofffront z-40 flex flex-col">
+        <aside className="h-full w-80 popofffront z-40 flex flex-col rounded-lg">
             {/* Header */}
             <div className="p-4 flex items-center justify-between sticky top-0 z-10">
                 <h2 className="font-bold text-lg text-white">Queue</h2>
@@ -127,8 +127,7 @@ export default function QueueDrawer({
                     <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-semibold text-white">
-                                Next from:{" "}
-                                {queue.length > 1 ? "Playlist" : "Track"}
+                                Up Next
                             </h3>
                             <Button
                                 variant="ghost"

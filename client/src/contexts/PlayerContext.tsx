@@ -120,7 +120,90 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const [lyricsError, setLyricsError] = useState<string | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const mediaSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+    const gainNodeRef = useRef<GainNode | null>(null);
+    const normalizationCacheRef = useRef<Map<number, number>>(new Map());
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const createAudioContext = () => {
+        if (!audioRef.current || audioContextRef.current) return;
+
+        const AudioContextConstructor =
+            window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextConstructor) return;
+
+        const context = new AudioContextConstructor();
+        audioContextRef.current = context;
+
+        if (audioRef.current) {
+            audioRef.current.muted = false;
+        }
+        const source = context.createMediaElementSource(audioRef.current);
+        const gainNode = context.createGain();
+        gainNode.gain.value = volume;
+
+        source.connect(gainNode).connect(context.destination);
+        mediaSourceRef.current = source;
+        gainNodeRef.current = gainNode;
+
+        if (context.state === "suspended") {
+            context.resume().catch(() => {
+                /* ignore resume errors until user gesture */
+            });
+        }
+    };
+
+    const setNormalizedVolume = (normalizedGain: number, userVolume: number) => {
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = normalizedGain * userVolume;
+        }
+    };
+
+    const computeTrackNormalization = async (track: ApiTrack) => {
+        if (!audioContextRef.current || !gainNodeRef.current) return;
+
+        const cachedGain = normalizationCacheRef.current.get(track.id);
+        if (cachedGain !== undefined) {
+            setNormalizedVolume(cachedGain, volume);
+            return;
+        }
+
+        try {
+            const response = await fetch(tracksApi.getStreamUrl(track.id));
+            const arrayBuffer = await response.arrayBuffer();
+            const decodedBuffer = await audioContextRef.current.decodeAudioData(
+                arrayBuffer
+            );
+
+            let sumSquares = 0;
+            let sampleCount = 0;
+            for (let channel = 0; channel < decodedBuffer.numberOfChannels; channel++) {
+                const channelData = decodedBuffer.getChannelData(channel);
+                for (let i = 0; i < channelData.length; i++) {
+                    sumSquares += channelData[i] * channelData[i];
+                }
+                sampleCount += channelData.length;
+            }
+
+            if (sampleCount === 0) {
+                normalizationCacheRef.current.set(track.id, 1);
+                return;
+            }
+
+            const rms = Math.sqrt(sumSquares / sampleCount);
+            const targetRms = 0.12;
+            let normalizedGain = targetRms / Math.max(rms, 0.0001);
+            normalizedGain = Math.min(Math.max(normalizedGain, 0.5), 4);
+
+            normalizationCacheRef.current.set(track.id, normalizedGain);
+            setNormalizedVolume(normalizedGain, volume);
+        } catch (error) {
+            console.error("Normalization failed:", error);
+            normalizationCacheRef.current.set(track.id, 1);
+            setNormalizedVolume(1, volume);
+        }
+    };
 
     // Initialize audio element
     useEffect(() => {
@@ -196,6 +279,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         audioRef.current.src = tracksApi.getStreamUrl(track.id);
         audioRef.current.load();
 
+        createAudioContext();
+        if (audioContextRef.current?.state === "suspended") {
+            audioContextRef.current.resume().catch((error) => {
+                console.error("AudioContext resume failed:", error);
+            });
+        }
+        computeTrackNormalization(track);
+
         audioRef.current
             .play()
             .then(() => {
@@ -250,7 +341,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const clampedVolume = Math.max(0, Math.min(1, newVolume));
         setVolumeState(clampedVolume);
 
-        if (audioRef.current) {
+        if (gainNodeRef.current) {
+            const currentTrackId = currentTrack?.id;
+            const normalizedGain =
+                (currentTrackId && normalizationCacheRef.current.get(currentTrackId)) ||
+                1;
+            gainNodeRef.current.gain.value = normalizedGain * clampedVolume;
+        } else if (audioRef.current) {
             audioRef.current.volume = clampedVolume;
         }
     };

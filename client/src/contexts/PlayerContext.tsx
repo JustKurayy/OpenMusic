@@ -192,9 +192,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             }
 
             const rms = Math.sqrt(sumSquares / sampleCount);
-            const targetRms = 0.12;
+            const targetRms = 0.28;
             let normalizedGain = targetRms / Math.max(rms, 0.0001);
-            normalizedGain = Math.min(Math.max(normalizedGain, 0.5), 4);
+            normalizedGain = Math.min(Math.max(normalizedGain, 0.5), 10);
 
             normalizationCacheRef.current.set(track.id, normalizedGain);
             setNormalizedVolume(normalizedGain, volume);

@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,11 +17,6 @@ import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
 import Radio from "@/pages/Radio";
 import Album from "@/pages/Album";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Update queryClient to include auth header
 queryClient.setDefaultOptions({
@@ -49,8 +44,6 @@ queryClient.setDefaultOptions({
 
 function AppContent() {
     const { user, isLoading } = useAuth();
-    const [searchQuery, setSearchQuery] = useState("");
-    const [location] = useLocation();
 
     if (isLoading) {
         return (
@@ -72,27 +65,17 @@ function AppContent() {
     return (
         <Layout>
             <div className="flex-1 flex flex-col overflow-hidden">
-                <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                        key={location}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <Switch>
-                            <Route path="/" component={Home} />
-                            <Route path="/library" component={Library} />
-                            <Route path="/upload" component={Upload} />
-                            <Route path="/radio" component={Radio} />
-                            <Route path="/playlist/:id" component={Playlist} />
-                            <Route path="/search" component={SearchPage} />
-                            <Route path="/create-playlist" component={CreatePlaylist} />
-                            <Route path="/album/:albumName" component={Album} />
-                            <Route component={NotFound} />
-                        </Switch>
-                    </motion.div>
-                </AnimatePresence>
+                <Switch>
+                    <Route path="/" component={Home} />
+                    <Route path="/library" component={Library} />
+                    <Route path="/upload" component={Upload} />
+                    <Route path="/radio" component={Radio} />
+                    <Route path="/playlist/:id" component={Playlist} />
+                    <Route path="/search" component={SearchPage} />
+                    <Route path="/create-playlist" component={CreatePlaylist} />
+                    <Route path="/album/:albumName" component={Album} />
+                    <Route component={NotFound} />
+                </Switch>
             </div>
         </Layout>
     );

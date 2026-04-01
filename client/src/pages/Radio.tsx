@@ -16,50 +16,57 @@ export default function RadioSearchPage() {
 
     return (
         <div className="p-8 min-h-screen h-full popofffront">
-            <h1 className="text-3xl font-bold text-white mb-6">
-                Extensive Radio Search
+            <h1 className="text-2xl font-bold text-white mb-8">
+                Explore Radio Stations
             </h1>
-            <form onSubmit={handleSearch} className="mb-6 flex gap-2">
+            <form onSubmit={handleSearch} className="mb-8 flex gap-3">
                 <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search for radio stations..."
-                    className="px-4 py-2 rounded-lg bg-gray-900 text-white w-full"
+                    placeholder="Search radio stations..."
+                    className="px-4 py-2 rounded-md bg-gray-800 text-white w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-green-500 text-black font-bold"
+                    className="px-6 py-2 rounded-md bg-green-500 hover:bg-green-400 text-black font-semibold transition-colors"
                 >
                     Search
                 </button>
             </form>
-            {loading && <div className="text-white">Loading...</div>}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {loading && <div className="text-gray-400">Loading...</div>}
+            {results.length === 0 && !loading && query && (
+                <div className="text-center py-12">
+                    <p className="text-gray-400">No stations found. Try another search.</p>
+                </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {results.map((radio) => (
                     <div
                         key={radio.stationuuid}
-                        className="bg-[#232323] rounded-xl p-4 shadow-lg"
+                        className="bg-gray-900 hover:bg-gray-800 rounded-md p-4 transition-colors"
                     >
-                        <h2 className="text-lg font-bold text-white mb-2">
+                        <h2 className="text-base font-semibold text-white mb-1 truncate">
                             {radio.name}
                         </h2>
-                        <p className="text-gray-400 mb-2">
-                            {radio.country} - {radio.language}
+                        <p className="text-sm text-gray-500 mb-3 truncate">
+                            {radio.country} {radio.language && `· ${radio.language}`}
                         </p>
                         <audio
                             controls
                             src={radio.url_resolved}
-                            className="w-full"
+                            className="w-full mb-3"
                         />
-                        <a
-                            href={radio.homepage}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-green-400 underline mt-2 block"
-                        >
-                            Visit Station
-                        </a>
+                        {radio.homepage && (
+                            <a
+                                href={radio.homepage}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-500 hover:text-green-400 text-sm transition-colors"
+                            >
+                                Visit Website →
+                            </a>
+                        )}
                     </div>
                 ))}
             </div>

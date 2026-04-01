@@ -26,16 +26,35 @@ export default function Home() {
 
     if (isLoading) {
         return (
-            <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-900 to-black">
-                <div className="p-6 animate-pulse">
-                    <div className="grid grid-cols-4 gap-4">
-                        {[...Array(8)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="col-span-1 row-span-1 h-48 bg-gray-800/50 rounded-lg"
-                            />
-                        ))}
+            <div className="flex-1 overflow-y-auto"
+                style={{
+                    background: 'linear-gradient(180deg, hsl(0, 0%, 12%) 0%, hsl(0, 0%, 7%) 40%, hsl(0, 0%, 5%) 100%)',
+                }}
+            >
+                <div className="p-6 md:p-8">
+                    {/* Greeting skeleton */}
+                    <div className="pt-4 mb-10">
+                        <div className="h-10 w-64 bg-neutral-800/50 rounded-lg animate-pulse" />
                     </div>
+
+                    {/* Section skeletons */}
+                    {[...Array(4)].map((_, sectionIndex) => (
+                        <div key={sectionIndex} className="mb-10">
+                            <div className="h-7 w-48 bg-neutral-800/50 rounded-lg animate-pulse mb-6" />
+                            <div className="flex gap-5">
+                                {[...Array(6)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex-shrink-0 w-52"
+                                    >
+                                        <div className="w-full aspect-square bg-neutral-800/50 rounded-xl animate-pulse mb-4" />
+                                        <div className="h-4 w-32 bg-neutral-800/50 rounded animate-pulse mb-2" />
+                                        <div className="h-3 w-24 bg-neutral-800/30 rounded animate-pulse" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );

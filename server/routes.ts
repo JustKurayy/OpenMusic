@@ -19,6 +19,8 @@ import {
 } from "@shared/schema";
 import path from "path";
 import fs from "fs";
+import { WebSocketServer } from "ws";
+import { spotifyEmitter, startSpotifyDownload } from "./spotify";
 import crypto from "crypto";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -760,6 +762,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
     });
 
+    // Spotify Download endpoint
+    app.post(
+        "/api/spotify/download",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                const user = req.user as any;
+                if (!user || (user as any).isGuest) {
+                    return res
+                        .status(403)
+                        .json({ message: "Login required to download from Spotify" });
+                }
+                const { url } = req.body || {};
+                if (
+                    !url ||
+                    !/open\.spotify\.com\/(track|playlist|album|artist)\//.test(url)
+                ) {
+                    return res.status(400).json({ message: "Invalid Spotify URL" });
+                }
+
+                // kick off async download — progress emitted over websocket
+                startSpotifyDownload((user as any).id, url).catch((err) => {
+                    spotifyEmitter.emit("error", {
+                        userId: (user as any).id,
+                        error: String(err),
+                    });
+                });
+
+                return res.status(202).json({ message: "Download started" });
+            } catch (error) {
+                return res.status(500).json({ message: "Failed to start download" });
+            }
+        }
+    );
+
     const httpServer = createServer(app);
+    // Attach WebSocket server for real-time spotify download progress
+    try {
+        const wss = new WebSocketServer({ server: httpServer, path: "/ws/spotify" });
+
+        // Each connection may subscribe to a specific userId.
+        (wss as any).on("connection", (ws: any, req: any) => {
+            ws.subscribedUserId = null;
+
+            ws.on("message", (msg: any) => {
+                try {
+                    const parsed = JSON.parse(msg.toString());
+                    if (parsed?.action === "subscribe" && parsed?.userId) {
+                        ws.subscribedUserId = parsed.userId;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            });
+        });
+
+        const forward = (eventName: string) => (payload: any) => {
+            const msg = JSON.stringify({ event: "spotify-download-progress", data: payload });
+            wss.clients.forEach((client: any) => {
+                try {
+                    if (client && (client as any).readyState === 1) {
+                        // If client subscribed to a userId, only send matching events
+                        const sub = (client as any).subscribedUserId;
+                        if (sub == null || sub === payload.userId) {
+                            client.send(msg);
+                        }
+                    }
+                } catch (e) {
+                    // swallow send errors
+                }
+            });
+        };
+
+        spotifyEmitter.on("progress", forward("progress"));
+        spotifyEmitter.on("complete", forward("complete"));
+        spotifyEmitter.on("error", forward("error"));
+        spotifyEmitter.on("log", forward("log"));
+    } catch (err) {
+        console.error("Failed to start WebSocket server for spotify downloads", err);
+    }
     return httpServer;
 }

@@ -141,3 +141,8 @@ export const lyricsApi = {
         return apiRequest("GET", `/api/lyrics?${params}`);
     },
 };
+
+// Spotify Download API
+export const spotifyApi = {
+    download: (url: string) => apiRequest("POST", "/api/spotify/download", { url }),
+};

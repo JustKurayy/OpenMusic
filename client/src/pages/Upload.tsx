@@ -17,6 +17,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { tracksApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import useSpotifyDownload from "@/hooks/useSpotifyDownload";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 interface UploadFile {
     file: File;
@@ -35,6 +46,9 @@ export default function Upload() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const { state: spotifyState, startDownload: startSpotifyDownload, close: closeSpotify } = useSpotifyDownload();
+
+    const [spotifyUrl, setSpotifyUrl] = useState("");
 
     const isGuest = user && (user as any).isGuest;
 
@@ -226,6 +240,41 @@ export default function Upload() {
         >
             <h1 className="text-3xl font-bold mb-6 text-white">Upload Your Music</h1>
 
+            {/* Spotify download section */}
+            <div className="mb-6">
+                <Card className="bg-zinc-900 border-zinc-800">
+                    <CardContent className="p-6 flex flex-col sm:flex-row gap-4 items-center">
+                        <div className="flex-1">
+                            <Label className="text-zinc-400 text-xs mb-1 block">Spotify URL</Label>
+                            <Input
+                                value={spotifyUrl}
+                                onChange={(e) => setSpotifyUrl(e.target.value)}
+                                placeholder="Paste a Spotify track, playlist, album, or artist URL"
+                                className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                            />
+                        </div>
+                        <div>
+                            <Button
+                                className="bg-green-500 hover:bg-green-400 text-black font-semibold"
+                                onClick={async () => {
+                                    if (!spotifyUrl.trim()) return;
+                                    try {
+                                        await startSpotifyDownload(spotifyUrl.trim());
+                                        toast({ title: "Download started", description: "Downloading via spotDL" });
+                                        setSpotifyUrl("");
+                                    } catch (err: any) {
+                                        toast({ title: "Download failed", description: err?.message || String(err), variant: "destructive" });
+                                    }
+                                }}
+                                disabled={spotifyState.status === "downloading" || spotifyState.status === "processing"}
+                            >
+                                {spotifyState.status === "downloading" || spotifyState.status === "processing" ? "Downloading…" : "Download"}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* Drop zone */}
             <Card className="mb-8 bg-zinc-900 border-zinc-800">
                 <CardContent className="p-8">
@@ -270,6 +319,47 @@ export default function Upload() {
                     />
                 </CardContent>
             </Card>
+
+            {/* Spotify progress modal */}
+            <Dialog open={spotifyState.open}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Spotify Download</DialogTitle>
+                        <DialogDescription>
+                            {spotifyState.status === "downloading" && (
+                                <span>Downloading: {spotifyState.currentTrack}</span>
+                            )}
+                            {spotifyState.status === "processing" && (
+                                <span>Starting download…</span>
+                            )}
+                            {spotifyState.status === "complete" && <span>Complete!</span>}
+                            {spotifyState.status === "error" && (
+                                <span className="text-destructive">{spotifyState.error}</span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="mt-4">
+                        <Progress value={spotifyState.progress} />
+                        <p className="text-sm text-zinc-400 mt-2">
+                            {spotifyState.progress}% ({spotifyState.totalTracks ?? "?"})
+                        </p>
+                    </div>
+
+                    <DialogFooter>
+                        <div className="flex-1" />
+                        <Button
+                            onClick={() => {
+                                closeSpotify();
+                            }}
+                            disabled={spotifyState.status === "downloading" || spotifyState.status === "processing"}
+                            className="bg-zinc-800"
+                        >
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Upload queue */}
             <AnimatePresence initial={false}>

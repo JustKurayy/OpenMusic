@@ -37,7 +37,7 @@ export default function Sidebar() {
     ] as const;
 
     return (
-        <aside className="flex w-16 flex-col lg:w-72 relative overflow-hidden"
+        <aside className="flex w-16 flex-col lg:w-72 relative overflow-hidden rounded-lg"
             style={{
                 background: 'linear-gradient(180deg, hsl(0, 0%, 10%) 0%, hsl(0, 0%, 7%) 100%)',
             }}

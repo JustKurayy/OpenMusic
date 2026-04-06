@@ -36,7 +36,7 @@ export default function QueueDrawer({
     };
 
     return (
-        <aside className="h-full w-80 popofffront z-40 flex flex-col rounded-lg">
+        <aside className="h-full w-80 spotify-panel z-40 flex flex-col rounded-lg">
             {/* Header */}
             <div className="p-4 flex items-center justify-between sticky top-0 z-10">
                 <h2 className="font-bold text-lg text-white">Queue</h2>

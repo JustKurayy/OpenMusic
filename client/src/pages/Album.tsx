@@ -7,6 +7,7 @@ import { usePlayer } from "@/contexts/PlayerContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { tracksApi, type ApiTrack } from "@/lib/api";
 import TrackList from "@/components/TrackList";
+import { motion } from "framer-motion";
 
 function formatDuration(seconds: number): string {
     const h = Math.floor(seconds / 3600);
@@ -88,41 +89,161 @@ export default function Album() {
                 className="relative overflow-hidden bg-gradient-to-b from-[var(--spotify-panel)] to-zinc-900 border-b border-gray-800"
                 style={{ minHeight: 320 }}
             >
-                <div className="relative px-8 pt-16 pb-6 flex items-end gap-6">
+                <motion.div
+                    className="relative px-8 pt-16 pb-6 flex items-end gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                        duration: 0.6,
+                        delay: 0.2,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                    }}
+                >
                     {/* Cover art */}
-                    <div className="w-52 h-52 flex-shrink-0 rounded-md shadow-lg overflow-hidden">
+                    <motion.div
+                        className="w-52 h-52 flex-shrink-0 rounded-md shadow-lg overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        transition={{
+                            duration: 0.6,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                            delay: 0.1,
+                        }}
+                        whileHover={{
+                            scale: 1.05,
+                            rotate: 2,
+                            transition: { duration: 0.3 },
+                        }}
+                    >
                         {coverArtUrl ? (
-                            <img
+                            <motion.img
                                 src={coverArtUrl}
                                 alt={albumName}
                                 className="w-full h-full object-cover"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.4,
+                                    delay: 0.3,
+                                }}
                             />
                         ) : (
                             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                                <Disc3 className="w-20 h-20 text-gray-600" />
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{
+                                        duration: 0.4,
+                                        delay: 0.4,
+                                        ease: [0.25, 0.46, 0.45, 0.94],
+                                    }}
+                                >
+                                    <Disc3 className="w-20 h-20 text-gray-600" />
+                                </motion.div>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
 
                     {/* Meta */}
-                    <div className="flex-1 min-w-0 pb-2">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                    <motion.div
+                        className="flex-1 min-w-0 pb-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                            duration: 0.5,
+                            delay: 0.2,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                        }}
+                    >
+                        <motion.p
+                            className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{
+                                duration: 0.3,
+                                delay: 0.3,
+                            }}
+                        >
                             Album
-                        </p>
-                        <h1 className="text-5xl font-bold text-white mb-3 break-words">
+                        </motion.p>
+                        <motion.h1
+                            className="text-5xl font-bold text-white mb-3 break-words"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                duration: 0.5,
+                                delay: 0.25,
+                                ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                        >
                             {albumName}
-                        </h1>
-                        <p className="text-sm text-gray-400">
-                            <span className="font-semibold text-white">
+                        </motion.h1>
+                        <motion.p
+                            className="text-sm text-gray-400"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                duration: 0.4,
+                                delay: 0.3,
+                                ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                        >
+                            <motion.span
+                                className="font-semibold text-white"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.3,
+                                    delay: 0.35,
+                                }}
+                            >
                                 {artist}
-                            </span>
-                            <span className="mx-2">•</span>
-                            {albumTracks.length} songs
-                            <span className="mx-2">•</span>
-                            {formatDuration(totalDuration)}
-                        </p>
-                    </div>
-                </div>
+                            </motion.span>
+                            <motion.span
+                                className="mx-2"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.2,
+                                    delay: 0.4,
+                                }}
+                            >
+                                •
+                            </motion.span>
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.3,
+                                    delay: 0.35,
+                                }}
+                            >
+                                {albumTracks.length} songs
+                            </motion.span>
+                            <motion.span
+                                className="mx-2"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.2,
+                                    delay: 0.45,
+                                }}
+                            >
+                                •
+                            </motion.span>
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                    duration: 0.3,
+                                    delay: 0.35,
+                                }}
+                            >
+                                {formatDuration(totalDuration)}
+                            </motion.span>
+                        </motion.p>
+                    </motion.div>
+                </motion.div>
             </div>
 
             {/* Controls */}
@@ -148,6 +269,7 @@ export default function Album() {
                     tracks={albumTracks}
                     showHeader={false}
                     showAlbum={false}
+                    containerId="album-tracks"
                 />
             </div>
         </div>

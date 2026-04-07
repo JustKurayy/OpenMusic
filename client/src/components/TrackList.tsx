@@ -2,6 +2,7 @@ import { Clock, MoreHorizontal, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { tracksApi, type ApiTrack } from "@/lib/api";
+import { motion } from "framer-motion";
 
 interface TrackListProps {
     tracks: ApiTrack[];
@@ -9,6 +10,7 @@ interface TrackListProps {
     showAlbum?: boolean;
     showDateAdded?: boolean;
     onEditTrack?: (track: ApiTrack) => void;
+    containerId?: string;
 }
 
 function formatTime(seconds: number): string {
@@ -37,8 +39,9 @@ export default function TrackList({
     showAlbum = true,
     showDateAdded = true,
     onEditTrack,
+    containerId,
 }: TrackListProps) {
-    const { playTrack, currentTrack, isPlaying } = usePlayer();
+    const { playTrack, currentTrack } = usePlayer();
 
     const handlePlayTrack = (track: ApiTrack) => {
         playTrack(track, tracks);
@@ -53,13 +56,37 @@ export default function TrackList({
     }
 
     return (
-        <ul className="rounded-lg overflow-hidden divide-y divide-spotify-black divide-opacity-10">
+        <motion.ul
+            className="rounded-lg overflow-hidden divide-y divide-spotify-black divide-opacity-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94],
+            }}
+            id={containerId}
+        >
             {tracks.map((track, index) => {
                 const isCurrentTrack = currentTrack?.id === track.id;
                 return (
-                    <li
+                    <motion.li
                         key={track.id}
                         className={`flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? "bg-zinc-800" : ""}`}
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                            duration: 0.3,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                            delay: index * 0.05,
+                        }}
+                        whileHover={{
+                            x: -5,
+                            transition: { duration: 0.2 },
+                        }}
+                        whileTap={{
+                            scale: 0.98,
+                            transition: { duration: 0.1 },
+                        }}
                         onClick={() => handlePlayTrack(track)}
                     >
                         <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden bg-zinc-800">
@@ -101,9 +128,9 @@ export default function TrackList({
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </Button>
-                    </li>
+                    </motion.li>
                 );
             })}
-        </ul>
+        </motion.ul>
     );
 }

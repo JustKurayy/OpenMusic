@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
 import {
     Dialog,
     DialogContent,
@@ -154,15 +155,37 @@ export default function Playlist() {
     }
 
     const tracks = playlist.tracks.map((pt) => pt.track);
-    const hasCoverImage = !!playlist.coverImage;
 
     return (
-        <div className="min-h-screen flex flex-col bg-black">
-            {/* Simple Header */}
-            <div className="relative bg-gradient-to-b from-gray-900 to-black h-[340px] border-b border-gray-800">
+        <div className="min-h-screen flex flex-col rounded-lg bg-[var(--spotify-panel)]">
+            {/* Header */}
+            <motion.div
+                className="relative bg-gradient-to-b from-[var(--spotify-panel)] to-zinc-900 h-[340px] border-b border-gray-800"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                    duration: 0.6,
+                    delay: 0.2,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+            >
                 <div className="relative px-8 pt-20 pb-6 h-full flex items-end space-x-6">
-                    {/* Playlist Cover */}
-                    <div className="w-56 h-56 flex-shrink-0 rounded-md shadow-lg">
+                    {/* Cover Art */}
+                    <motion.div
+                        className="w-56 h-56 flex-shrink-0 rounded-md shadow-lg"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        transition={{
+                            duration: 0.6,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                            delay: 0.1,
+                        }}
+                        whileHover={{
+                            scale: 1.05,
+                            rotate: 2,
+                            transition: { duration: 0.3 },
+                        }}
+                    >
                         {playlist.coverImage ? (
                             <img
                                 src={playlist.coverImage}
@@ -174,12 +197,31 @@ export default function Playlist() {
                                 <div className="text-7xl text-gray-600">♪</div>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
+
                     {/* Playlist Info */}
-                    <div className="flex-1 min-w-0 pb-2">
-                        <p className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">
+                    <motion.div
+                        className="flex-1 min-w-0 pb-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                            duration: 0.5,
+                            delay: 0.2,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                        }}
+                    >
+                        <motion.p
+                            className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{
+                                duration: 0.3,
+                                delay: 0.3,
+                            }}
+                        >
                             Playlist
-                        </p>
+                        </motion.p>
+
                         {isEditing ? (
                             <div className="space-y-4">
                                 <Input
@@ -226,28 +268,78 @@ export default function Playlist() {
                             </div>
                         ) : (
                             <>
-                                <h1 className="text-5xl font-bold mb-3 text-white break-words">
+                                <motion.h1
+                                    className="text-5xl font-bold mb-3 text-white break-words"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                        duration: 0.5,
+                                        delay: 0.25,
+                                        ease: [0.25, 0.46, 0.45, 0.94],
+                                    }}
+                                >
                                     {playlist.name}
-                                </h1>
+                                </motion.h1>
                                 {playlist.description && (
-                                    <p className="text-sm text-gray-400 mb-4">
+                                    <motion.p
+                                        className="text-sm text-gray-400 mb-4"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{
+                                            duration: 0.4,
+                                            delay: 0.3,
+                                            ease: [0.25, 0.46, 0.45, 0.94],
+                                        }}
+                                    >
                                         {playlist.description}
-                                    </p>
+                                    </motion.p>
                                 )}
-                                <div className="flex items-center space-x-2 text-xs text-gray-400">
-                                    <span>
+                                <motion.div
+                                    className="flex items-center space-x-2 text-xs text-gray-400"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                        duration: 0.4,
+                                        delay: 0.3,
+                                        ease: [0.25, 0.46, 0.45, 0.94],
+                                    }}
+                                >
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{
+                                            duration: 0.3,
+                                            delay: 0.35,
+                                        }}
+                                    >
                                         {playlist.user?.name || "Unknown"}
-                                    </span>
-                                    <span>•</span>
-                                    <span>
+                                    </motion.span>
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{
+                                            duration: 0.2,
+                                            delay: 0.4,
+                                        }}
+                                    >
+                                        •
+                                    </motion.span>
+                                    <motion.span
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{
+                                            duration: 0.3,
+                                            delay: 0.35,
+                                        }}
+                                    >
                                         {playlist.trackCount || 0} songs
-                                    </span>
-                                </div>
+                                    </motion.span>
+                                </motion.div>
                             </>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Controls */}
             <div className="px-8 py-4 border-b border-gray-800 flex items-center space-x-4">
@@ -277,38 +369,38 @@ export default function Playlist() {
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-1">
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
-                                    onClick={handleEdit}
-                                >
-                                    <Edit2 className="w-4 h-4 mr-3" />
-                                    Edit Details
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
-                                >
-                                    <Share className="w-4 h-4 mr-3" />
-                                    Share
-                                </Button>
-                                <hr className="border-gray-700 my-2" />
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-gray-700 h-12"
-                                    onClick={() => deleteMutation.mutate()}
-                                    disabled={deleteMutation.isPending}
-                                >
-                                    <Trash2 className="w-4 h-4 mr-3" />
-                                    Delete Playlist
-                                </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
+                                onClick={handleEdit}
+                            >
+                                <Edit2 className="w-4 h-4 mr-3" />
+                                Edit Details
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start text-white hover:text-green-400 hover:bg-gray-700 h-12"
+                            >
+                                <Share className="w-4 h-4 mr-3" />
+                                Share
+                            </Button>
+                            <hr className="border-gray-700 my-2" />
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-gray-700 h-12"
+                                onClick={() => deleteMutation.mutate()}
+                                disabled={deleteMutation.isPending}
+                            >
+                                <Trash2 className="w-4 h-4 mr-3" />
+                                Delete Playlist
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
 
             {/* Track List */}
-            <div className="bg-black px-8 pb-6 flex-1">
+            <div className="bg-[var(--spotify-panel)] px-8 pb-6 flex-1">
                 {tracks.length === 0 ? (
                     <div className="text-center py-16">
                         <h3 className="text-2xl font-bold mb-4 text-white">

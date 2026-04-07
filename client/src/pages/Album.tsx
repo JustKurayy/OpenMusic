@@ -30,7 +30,9 @@ export default function Album() {
         () =>
             allTracks
                 .filter((t) => t.album === albumName)
-                .sort((a, b) => (a.trackNumber ?? 999) - (b.trackNumber ?? 999)),
+                .sort(
+                    (a, b) => (a.trackNumber ?? 999) - (b.trackNumber ?? 999)
+                ),
         [allTracks, albumName]
     );
 
@@ -41,7 +43,10 @@ export default function Album() {
 
     const artist =
         albumTracks.length > 0 ? albumTracks[0].artist : "Unknown Artist";
-    const totalDuration = albumTracks.reduce((s, t) => s + (t.duration ?? 0), 0);
+    const totalDuration = albumTracks.reduce(
+        (s, t) => s + (t.duration ?? 0),
+        0
+    );
 
     const handlePlay = () => {
         if (albumTracks.length > 0) {
@@ -66,16 +71,23 @@ export default function Album() {
         return (
             <div className="flex-1 overflow-y-auto p-8 text-center">
                 <Disc3 className="w-16 h-16 text-zinc-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">Album not found</h2>
-                <p className="text-zinc-400">No tracks found for "{albumName}".</p>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                    Album not found
+                </h2>
+                <p className="text-zinc-400">
+                    No tracks found for "{albumName}".
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-black">
+        <div className="min-h-screen flex flex-col rounded-lg bg-[var(--spotify-panel)]">
             {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-b from-gray-900 to-black border-b border-gray-800" style={{ minHeight: 320 }}>
+            <div
+                className="relative overflow-hidden bg-gradient-to-b from-[var(--spotify-panel)] to-zinc-900 border-b border-gray-800"
+                style={{ minHeight: 320 }}
+            >
                 <div className="relative px-8 pt-16 pb-6 flex items-end gap-6">
                     {/* Cover art */}
                     <div className="w-52 h-52 flex-shrink-0 rounded-md shadow-lg overflow-hidden">
@@ -101,7 +113,9 @@ export default function Album() {
                             {albumName}
                         </h1>
                         <p className="text-sm text-gray-400">
-                            <span className="font-semibold text-white">{artist}</span>
+                            <span className="font-semibold text-white">
+                                {artist}
+                            </span>
                             <span className="mx-2">•</span>
                             {albumTracks.length} songs
                             <span className="mx-2">•</span>
@@ -123,14 +137,18 @@ export default function Album() {
             </div>
 
             {/* Track list */}
-            <div className="bg-black px-8 pb-8 flex-1">
+            <div className="bg-[var(--spotify-panel)] px-8 pb-8 flex-1">
                 {/* Column headers */}
                 <div className="grid grid-cols-[16px_1fr_minmax(80px,auto)] gap-4 px-4 py-2 text-xs font-medium text-gray-500 border-b border-gray-800 mb-2 uppercase tracking-wider">
                     <span>#</span>
                     <span>Title</span>
                     <Clock className="w-3.5 h-3.5 justify-self-end" />
                 </div>
-                <TrackList tracks={albumTracks} showHeader={false} showAlbum={false} />
+                <TrackList
+                    tracks={albumTracks}
+                    showHeader={false}
+                    showAlbum={false}
+                />
             </div>
         </div>
     );

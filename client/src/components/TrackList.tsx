@@ -59,7 +59,7 @@ export default function TrackList({
                 return (
                     <li
                         key={track.id}
-                        className={`flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? "bg-spotify-green bg-opacity-10" : ""}`}
+                        className={`flex items-center gap-3 px-4 py-2 cursor-pointer group transition-colors duration-200 hover:bg-spotify-black hover:bg-opacity-50 ${isCurrentTrack ? "bg-zinc-800" : ""}`}
                         onClick={() => handlePlayTrack(track)}
                     >
                         <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden bg-zinc-800">

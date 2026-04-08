@@ -27,6 +27,7 @@ interface PlayerContextType {
     volume: number;
     queue: ApiTrack[];
     currentIndex: number;
+    repeatMode: number;
     showLyrics: boolean;
     lyrics: LyricsLine[];
     lyricsLoading: boolean;
@@ -39,6 +40,7 @@ interface PlayerContextType {
     toggle: () => void;
     seekTo: (time: number) => void;
     setVolume: (volume: number) => void;
+    setRepeatMode: (mode: number) => void;
     next: () => void;
     previous: () => void;
     addToQueue: (track: ApiTrack) => void;
@@ -114,6 +116,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const [volume, setVolumeState] = useState(0.2);
     const [queue, setQueue] = useState<ApiTrack[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [repeatMode, setRepeatModeState] = useState(0); // 0=off, 1=queue, 2=one
     const [showLyrics, setShowLyrics] = useState(false);
     const [lyrics, setLyrics] = useState<LyricsLine[]>([]);
     const [lyricsLoading, setLyricsLoading] = useState(false);
@@ -125,6 +128,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const gainNodeRef = useRef<GainNode | null>(null);
     const normalizationCacheRef = useRef<Map<number, number>>(new Map());
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const nextRef = useRef<() => void>(() => {});
 
     const createAudioContext = () => {
         if (!audioRef.current || audioContextRef.current) return;
@@ -223,7 +227,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         };
 
         const handleEnded = () => {
-            next();
+            console.log("Audio ended event fired - calling nextRef.current()");
+            nextRef.current();
         };
 
         const handleError = (e: any) => {
@@ -267,6 +272,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const playTrack = (track: ApiTrack, newQueue?: ApiTrack[]) => {
         if (!audioRef.current) return;
 
+        console.log("playTrack called for:", track.title);
+
         // Record the play in history
         if (track.id) {
             historyApi.recordPlay(track.id).catch((err) => {
@@ -303,6 +310,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         audioRef.current
             .play()
             .then(() => {
+                console.log("Track started playing:", track.title);
                 setIsPlaying(true);
             })
             .catch((error) => {
@@ -366,13 +374,55 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const next = () => {
-        if (queue.length === 0 || currentIndex >= queue.length - 1) return;
+    const setRepeatMode = (mode: number) => {
+        setRepeatModeState(Math.max(0, Math.min(2, mode)));
+    };
 
-        const nextTrack = queue[currentIndex + 1];
-        setCurrentIndex(currentIndex + 1);
+    const next = () => {
+        console.log(
+            "next() called, queue.length:",
+            queue.length,
+            "currentIndex:",
+            currentIndex,
+            "repeatMode:",
+            repeatMode
+        );
+        if (queue.length === 0) return;
+
+        // Repeat mode 2 = repeat current track
+        if (repeatMode === 2) {
+            console.log("Repeat mode 2 - replaying current track");
+            seekTo(0);
+            audioRef.current?.play();
+            setIsPlaying(true);
+            return;
+        }
+
+        const nextIndex = currentIndex + 1;
+
+        // Repeat mode 1 = repeat queue (loop back to start)
+        if (nextIndex >= queue.length) {
+            if (repeatMode === 1) {
+                console.log("Repeat mode 1 - looping back to first track");
+                setCurrentIndex(0);
+                playTrack(queue[0]);
+                return;
+            }
+            // Repeat mode 0 = stop at end of queue
+            console.log("Repeat mode 0 - stopping at end of queue");
+            return;
+        }
+
+        const nextTrack = queue[nextIndex];
+        console.log("Playing next track:", nextTrack.title);
+        setCurrentIndex(nextIndex);
         playTrack(nextTrack);
     };
+
+    // Update the ref when next function changes
+    useEffect(() => {
+        nextRef.current = next;
+    }, [next]);
 
     const previous = () => {
         if (queue.length === 0 || currentIndex <= 0) return;
@@ -494,6 +544,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 volume,
                 queue,
                 currentIndex,
+                repeatMode,
                 showLyrics,
                 lyrics,
                 lyricsLoading,
@@ -504,6 +555,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 toggle,
                 seekTo,
                 setVolume,
+                setRepeatMode,
                 next,
                 previous,
                 addToQueue,

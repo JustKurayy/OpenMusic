@@ -8,6 +8,7 @@ import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useQuery } from "@tanstack/react-query";
 import { tracksApi, type ApiTrack } from "@/lib/api";
 import { playlistsApi, type ApiPlaylist } from "@/lib/api";
+import { historyApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlayer } from "@/contexts/PlayerContext";
 import {
@@ -41,7 +42,7 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
     const radiosRef = useRef<HTMLDivElement>(null);
     const recentlyPlayedRef = useRef<HTMLDivElement>(null);
 
-    // Fetch user's playlists and user
+    // Fetch user's playlists, user, and listening history
     const { user } = useAuth();
     const { data: userPlaylists = [] } = useQuery<ApiPlaylist[]>({
         queryKey: ["/api/playlists"],
@@ -49,7 +50,45 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
     });
     const userPlaylistsLimited: ApiPlaylist[] = userPlaylists.slice(0, 8);
     const recentTracks: ApiTrack[] = tracks.slice(0, 8);
-    const recentlyPlayedTracks: ApiTrack[] = tracks.slice(8, 16);
+
+    // Fetch recent plays from listening history using historyApi
+    const { data: recentPlays = [], isLoading: isLoadingRecentPlays } =
+        useQuery<any[]>({
+            queryKey: ["history/replay"],
+            enabled: true, // Always enabled, but only fetch if user exists
+            queryFn: async () => {
+                if (!user) return []; // Return empty array if no user
+                return historyApi.getRecentPlays(16).then((res) => res.json());
+            },
+        });
+
+    // Use the tracks prop passed from parent component (already contains all tracks)
+    const tracksData = tracks || [];
+
+    // Only render recently played when data is loaded and user exists
+    const renderRecentlyPlayed =
+        user && !isLoadingRecentPlays && (recentPlays?.length || 0) > 0;
+
+    // Map history entries to track data and create combined objects with play count
+    const recentlyPlayedTracksWithCount: Array<
+        ApiTrack & { playCount: number }
+    > = (recentPlays ?? [])
+        .map((play: any) => {
+            const track = tracksData.find((t) => t.id === play.trackId);
+            if (track) {
+                return { ...track, playCount: play.playCount };
+            }
+            return null;
+        })
+        .filter((t: any): t is ApiTrack & { playCount: number } => t !== null);
+
+    // Keep only valid tracks (not undefined)
+    const validTracks = recentlyPlayedTracksWithCount.filter(
+        (t) => t !== undefined
+    );
+    const recentlyPlayedTracksFiltered: Array<
+        ApiTrack & { playCount: number }
+    > = validTracks as Array<ApiTrack & { playCount: number }>;
     const [radios, setRadios] = useState<any[]>([]);
 
     // State to track scrollability
@@ -89,7 +128,8 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
         recentTracks.length,
         userPlaylistsLimited.length,
         radios.length,
-        recentlyPlayedTracks.length,
+        recentlyPlayedTracksFiltered.length,
+        tracksData.length,
     ]);
 
     // Scroll handlers
@@ -675,162 +715,197 @@ export default function BentoGrid({ tracks, onTrackClick }: BentoGridProps) {
                 </motion.section>
 
                 {/* Recently Played Section */}
-                <motion.section
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                        duration: 0.6,
-                        delay: 0.4,
-                        ease: [0.16, 1, 0.3, 1],
-                    }}
-                >
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1 h-6 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full" />
-                            <h2 className="text-2xl font-semibold text-white">
-                                Recently Played
-                            </h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {canScrollPlayed && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                                    onClick={() =>
-                                        scrollLeft(recentlyPlayedRef)
-                                    }
-                                >
-                                    <ChevronLeft className="w-5 h-5" />
-                                </Button>
-                            )}
-                            {canScrollPlayed && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                                    onClick={() =>
-                                        scrollRight(recentlyPlayedRef)
-                                    }
-                                >
-                                    <ChevronRight className="w-5 h-5" />
-                                </Button>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
-                            >
-                                <MoreHorizontal className="w-5 h-5" />
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Animated slide container */}
-                    <div className="relative">
-                        {/* Background glow effect */}
-                        <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 animate-pulse" />
-                        </div>
-
-                        <div
-                            ref={recentlyPlayedRef}
-                            className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1"
-                        >
-                            <AnimatePresence>
-                                {recentlyPlayedTracks.map((track, index) => (
-                                    <motion.div
-                                        key={track.id}
-                                        initial={{
-                                            opacity: 0,
-                                            x: -100,
-                                            scale: 0.9,
-                                            filter: "blur(10px)",
-                                        }}
-                                        animate={{
-                                            opacity: 1,
-                                            x: 0,
-                                            scale: 1,
-                                            filter: "blur(0px)",
-                                        }}
-                                        exit={{
-                                            opacity: 0,
-                                            x: -100,
-                                            scale: 0.9,
-                                            filter: "blur(10px)",
-                                        }}
-                                        transition={{
-                                            duration: 0.6,
-                                            delay: index * 0.05,
-                                            ease: "easeOut",
-                                        }}
-                                        className="flex-shrink-0 w-52 rounded-xl p-4 cursor-pointer group relative bg-[#181818] border border-white/5 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
-                                        onClick={() => onTrackClick(track)}
+                {renderRecentlyPlayed && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                            duration: 0.6,
+                            delay: 0.4,
+                            ease: [0.16, 1, 0.3, 1],
+                        }}
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-6 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full" />
+                                <h2 className="text-2xl font-semibold text-white">
+                                    Recently Played
+                                </h2>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {canScrollPlayed && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                                        onClick={() =>
+                                            scrollLeft(recentlyPlayedRef)
+                                        }
                                     >
-                                        <div className="relative mb-4">
-                                            <motion.img
-                                                src={
-                                                    track.coverArt
-                                                        ? tracksApi.getArtworkUrl(
-                                                              track.id
-                                                          )
-                                                        : `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`
-                                                }
-                                                alt={track.title}
-                                                className="w-full aspect-square rounded-lg object-cover shadow-2xl"
-                                                whileHover={{ scale: 1.05 }}
-                                                transition={{ duration: 0.3 }}
-                                                onError={(e) => {
-                                                    e.currentTarget.src = `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`;
-                                                }}
-                                            />
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </Button>
+                                )}
+                                {canScrollPlayed && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                                        onClick={() =>
+                                            scrollRight(recentlyPlayedRef)
+                                        }
+                                    >
+                                        <ChevronRight className="w-5 h-5" />
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-8 h-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+                                >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Animated slide container */}
+                        <div className="relative">
+                            {/* Background glow effect */}
+                            <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 animate-pulse" />
+                            </div>
+
+                            <div
+                                ref={recentlyPlayedRef}
+                                className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide scroll-smooth pl-1"
+                            >
+                                <AnimatePresence>
+                                    {recentlyPlayedTracksFiltered.map(
+                                        (trackWithCount, index) => (
                                             <motion.div
+                                                key={trackWithCount.id}
                                                 initial={{
                                                     opacity: 0,
-                                                    scale: 0.8,
-                                                    y: 10,
+                                                    x: -100,
+                                                    scale: 0.9,
+                                                    filter: "blur(10px)",
                                                 }}
                                                 animate={{
                                                     opacity: 1,
+                                                    x: 0,
                                                     scale: 1,
-                                                    y: 0,
+                                                    filter: "blur(0px)",
                                                 }}
-                                                className="absolute top-3 left-3 badge-played text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 uppercase tracking-wider bg-blue-500"
-                                            >
-                                                <Clock className="w-3 h-3" />
-                                                PLAYED
-                                            </motion.div>
-                                            <motion.div
-                                                initial={{
+                                                exit={{
                                                     opacity: 0,
-                                                    scale: 0.8,
-                                                    y: 10,
+                                                    x: -100,
+                                                    scale: 0.9,
+                                                    filter: "blur(10px)",
                                                 }}
-                                                className="play-button absolute bottom-2 right-2 w-12 h-12 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 bg-blue-500 hover:bg-blue-400 shadow-lg shadow-blue-500/30"
+                                                transition={{
+                                                    duration: 0.6,
+                                                    delay: index * 0.05,
+                                                    ease: "easeOut",
+                                                }}
+                                                className="flex-shrink-0 w-52 rounded-xl p-4 cursor-pointer group relative bg-[#181818] border border-white/5 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
+                                                onClick={() =>
+                                                    onTrackClick(trackWithCount)
+                                                }
                                             >
-                                                <Play className="w-5 h-5 text-black ml-0.5 fill-current" />
+                                                <div className="relative mb-4">
+                                                    <motion.img
+                                                        src={
+                                                            trackWithCount.coverArt
+                                                                ? tracksApi.getArtworkUrl(
+                                                                      trackWithCount.id
+                                                                  )
+                                                                : `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`
+                                                        }
+                                                        alt={
+                                                            trackWithCount.title
+                                                        }
+                                                        className="w-full aspect-square rounded-lg object-cover shadow-2xl"
+                                                        whileHover={{
+                                                            scale: 1.05,
+                                                        }}
+                                                        transition={{
+                                                            duration: 0.3,
+                                                        }}
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = `https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop&auto=format&q=80&seed=${index + 200}`;
+                                                        }}
+                                                    />
+                                                    <motion.div
+                                                        initial={{
+                                                            opacity: 0,
+                                                            scale: 0.8,
+                                                            y: 10,
+                                                        }}
+                                                        animate={{
+                                                            opacity: 1,
+                                                            scale: 1,
+                                                            y: 0,
+                                                        }}
+                                                        className="absolute top-3 left-3 badge-played text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 uppercase tracking-wider bg-blue-500"
+                                                    >
+                                                        <Clock className="w-3 h-3" />
+                                                        PLAYED
+                                                    </motion.div>
+                                                    {/* Play count badge - only show if > 1 */}
+                                                    {trackWithCount.playCount >
+                                                        1 && (
+                                                        <motion.div
+                                                            initial={{
+                                                                opacity: 0,
+                                                                scale: 0.8,
+                                                                y: 10,
+                                                            }}
+                                                            animate={{
+                                                                opacity: 1,
+                                                                scale: 1,
+                                                                y: 0,
+                                                            }}
+                                                            className="absolute top-3 right-3 badge-plays text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 uppercase tracking-wider bg-blue-400"
+                                                        >
+                                                            <Music className="w-2.5 h-2.5" />
+                                                            {
+                                                                trackWithCount.playCount
+                                                            }
+                                                            x
+                                                        </motion.div>
+                                                    )}
+                                                    <motion.div
+                                                        initial={{
+                                                            opacity: 0,
+                                                            scale: 0.8,
+                                                            y: 10,
+                                                        }}
+                                                        className="play-button absolute bottom-2 right-2 w-12 h-12 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 bg-blue-500 hover:bg-blue-400 shadow-lg shadow-blue-500/30"
+                                                    >
+                                                        <Play className="w-5 h-5 text-black ml-0.5 fill-current" />
+                                                    </motion.div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <h3 className="font-semibold text-sm text-white truncate group-hover:text-blue-400 transition-colors duration-300">
+                                                        {trackWithCount.title}
+                                                    </h3>
+                                                    <p className="text-xs text-zinc-400 truncate group-hover:text-zinc-300 transition-colors duration-300">
+                                                        {trackWithCount.artist}
+                                                    </p>
+                                                    <div className="flex items-center gap-1.5 pt-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50 animate-pulse" />
+                                                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
+                                                            Recently played
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </motion.div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <h3 className="font-semibold text-sm text-white truncate group-hover:text-blue-400 transition-colors duration-300">
-                                                {track.title}
-                                            </h3>
-                                            <p className="text-xs text-zinc-400 truncate group-hover:text-zinc-300 transition-colors duration-300">
-                                                {track.artist}
-                                            </p>
-                                            <div className="flex items-center gap-1.5 pt-1">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50 animate-pulse" />
-                                                <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
-                                                    Recently played
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                                        )
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
-                    </div>
-                </motion.section>
+                    </motion.section>
+                )}
             </div>
         </div>
     );

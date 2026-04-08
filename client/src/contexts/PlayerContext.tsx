@@ -5,7 +5,7 @@ declare global {
         lyricsCache?: { [key: string]: any };
     }
 }
-import { tracksApi, type ApiTrack } from "@/lib/api";
+import { tracksApi, type ApiTrack, historyApi } from "@/lib/api";
 import { lyricsApi } from "@/lib/api";
 
 interface LyricsLine {
@@ -154,7 +154,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const setNormalizedVolume = (normalizedGain: number, userVolume: number) => {
+    const setNormalizedVolume = (
+        normalizedGain: number,
+        userVolume: number
+    ) => {
         if (gainNodeRef.current) {
             gainNodeRef.current.gain.value = normalizedGain * userVolume;
         }
@@ -172,13 +175,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         try {
             const response = await fetch(tracksApi.getStreamUrl(track.id));
             const arrayBuffer = await response.arrayBuffer();
-            const decodedBuffer = await audioContextRef.current.decodeAudioData(
-                arrayBuffer
-            );
+            const decodedBuffer =
+                await audioContextRef.current.decodeAudioData(arrayBuffer);
 
             let sumSquares = 0;
             let sampleCount = 0;
-            for (let channel = 0; channel < decodedBuffer.numberOfChannels; channel++) {
+            for (
+                let channel = 0;
+                channel < decodedBuffer.numberOfChannels;
+                channel++
+            ) {
                 const channelData = decodedBuffer.getChannelData(channel);
                 for (let i = 0; i < channelData.length; i++) {
                     sumSquares += channelData[i] * channelData[i];
@@ -260,6 +266,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     const playTrack = (track: ApiTrack, newQueue?: ApiTrack[]) => {
         if (!audioRef.current) return;
+
+        // Record the play in history
+        if (track.id) {
+            historyApi.recordPlay(track.id).catch((err) => {
+                console.error("Failed to record play history:", err);
+            });
+        }
 
         // Stop radio playback if active
         if (radioAudioRef.current) {
@@ -344,7 +357,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (gainNodeRef.current) {
             const currentTrackId = currentTrack?.id;
             const normalizedGain =
-                (currentTrackId && normalizationCacheRef.current.get(currentTrackId)) ||
+                (currentTrackId &&
+                    normalizationCacheRef.current.get(currentTrackId)) ||
                 1;
             gainNodeRef.current.gain.value = normalizedGain * clampedVolume;
         } else if (audioRef.current) {

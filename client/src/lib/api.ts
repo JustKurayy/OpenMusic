@@ -87,13 +87,16 @@ export const tracksApi = {
         });
     },
 
-    update: (id: number, data: Partial<{
-        title: string;
-        artist: string;
-        album?: string | null;
-        trackNumber?: number | null;
-        coverArt?: string | null;
-    }>) => apiRequest("PUT", `/api/tracks/${id}`, data),
+    update: (
+        id: number,
+        data: Partial<{
+            title: string;
+            artist: string;
+            album?: string | null;
+            trackNumber?: number | null;
+            coverArt?: string | null;
+        }>
+    ) => apiRequest("PUT", `/api/tracks/${id}`, data),
 
     delete: (id: number) => apiRequest("DELETE", `/api/tracks/${id}`),
 
@@ -113,7 +116,11 @@ export const playlistsApi = {
 
     update: (
         id: number,
-        data: { name?: string; description?: string; coverImage?: string | null }
+        data: {
+            name?: string;
+            description?: string;
+            coverImage?: string | null;
+        }
     ) => apiRequest("PUT", `/api/playlists/${id}`, data),
 
     delete: (id: number) => apiRequest("DELETE", `/api/playlists/${id}`),
@@ -142,7 +149,16 @@ export const lyricsApi = {
     },
 };
 
+// Listening History API
+export const historyApi = {
+    recordPlay: (trackId: number) =>
+        apiRequest("POST", `/api/history/record`, { trackId }),
+    getRecentPlays: (limit = 10) =>
+        apiRequest("GET", `/api/history/replay?limit=${limit}`),
+};
+
 // Spotify Download API
 export const spotifyApi = {
-    download: (url: string) => apiRequest("POST", "/api/spotify/download", { url }),
+    download: (url: string) =>
+        apiRequest("POST", "/api/spotify/download", { url }),
 };

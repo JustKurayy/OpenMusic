@@ -10,7 +10,12 @@ import {
     isGoogleOAuthConfigured,
     createGuestUser,
 } from "./auth";
-import { upload, extractMetadata, extractMetadataPreview, streamAudio } from "./upload";
+import {
+    upload,
+    extractMetadata,
+    extractMetadataPreview,
+    streamAudio,
+} from "./upload";
 import {
     insertTrackSchema,
     updateTrackSchema,
@@ -38,7 +43,11 @@ function createRateLimitMiddleware(
 ) {
     const entries = new Map<string, RateLimitEntry>();
 
-    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    return (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction
+    ) => {
         const key = `${req.ip}:${req.path}`;
         const now = Date.now();
         const existing = entries.get(key);
@@ -49,7 +58,9 @@ function createRateLimitMiddleware(
         }
 
         if (existing.count >= limit) {
-            const retryAfterSeconds = Math.ceil((existing.resetAt - now) / 1000);
+            const retryAfterSeconds = Math.ceil(
+                (existing.resetAt - now) / 1000
+            );
             res.set("Retry-After", retryAfterSeconds.toString());
             return res.status(429).json({ message });
         }
@@ -167,12 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Guest login endpoint
     app.post("/api/auth/guest", (req, res) => {
         if (isGoogleOAuthConfigured) {
-            return res
-                .status(403)
-                .json({
-                    message:
-                        "Guest mode not available when OAuth is configured",
-                });
+            return res.status(403).json({
+                message: "Guest mode not available when OAuth is configured",
+            });
         }
         const guestUser = createGuestUser();
         const token = generateToken(guestUser);
@@ -263,7 +271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         async (req, res) => {
             try {
                 if (!req.file) {
-                    return res.status(400).json({ message: "No file uploaded" });
+                    return res
+                        .status(400)
+                        .json({ message: "No file uploaded" });
                 }
                 const metadata = await extractMetadataPreview(
                     req.file.path,
@@ -313,7 +323,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.json(tracks);
         } catch (error) {
             console.error("[API /api/tracks] Error:", error);
-            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     });
 
@@ -326,7 +339,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.json(track);
         } catch (error) {
             console.error("[API /api/tracks/:id] Error:", error);
-            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     });
 
@@ -435,7 +451,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.json({ message: "Track deleted successfully" });
         } catch (error) {
             console.error("[API /api/tracks/:id] Delete Error:", error);
-            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     });
 
@@ -451,7 +470,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 streamAudio(track.filePath, req, res);
             } catch (error) {
                 console.error("[API /api/tracks/:id/stream] Error:", error);
-                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
             }
         }
     );
@@ -464,11 +487,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
                 const track = await storage.getTrack(parseInt(req.params.id));
                 if (!track || !(track as any).coverArt) {
-                    return res.status(404).json({ message: "No artwork found" });
+                    return res
+                        .status(404)
+                        .json({ message: "No artwork found" });
                 }
                 const safePath = resolveUploadPath((track as any).coverArt);
                 if (!safePath || !fs.existsSync(safePath)) {
-                    return res.status(404).json({ message: "Artwork file not found" });
+                    return res
+                        .status(404)
+                        .json({ message: "Artwork file not found" });
                 }
                 const mimeType = (track as any).coverArt.endsWith(".png")
                     ? "image/png"
@@ -478,7 +505,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 fs.createReadStream(safePath).pipe(res);
             } catch (error) {
                 console.error("[API /api/tracks/:id/artwork] Error:", error);
-                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
             }
         }
     );
@@ -495,7 +526,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.json(playlists);
         } catch (error) {
             console.error("[API /api/playlists] Error:", error);
-            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     });
 
@@ -509,13 +543,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             // Allow authenticated users to view any playlist (not just their own)
             // Guest users can only view their own playlists
-            if (playlist.userId !== (req.user as any).id && (req.user as any).isGuest) {
+            if (
+                playlist.userId !== (req.user as any).id &&
+                (req.user as any).isGuest
+            ) {
                 return res.status(403).json({ message: "Unauthorized" });
             }
             res.json(playlist);
         } catch (error) {
             console.error("[API /api/playlists/:id] Error:", error);
-            res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     });
 
@@ -583,7 +623,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 res.json({ message: "Playlist deleted successfully" });
             } catch (error) {
                 console.error("[API /api/playlists/:id] Delete Error:", error);
-                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
             }
         }
     );
@@ -646,8 +690,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 res.json({ message: "Track removed from playlist" });
             } catch (error) {
-                console.error("[API /api/playlists/:playlistId/tracks/:trackId] Error:", error);
-                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+                console.error(
+                    "[API /api/playlists/:playlistId/tracks/:trackId] Error:",
+                    error
+                );
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
             }
         }
     );
@@ -681,7 +732,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 res.json({ message: "Playlist reordered successfully" });
             } catch (error) {
                 console.error("[API /api/playlists/:id/reorder] Error:", error);
-                res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
+    );
+
+    // History API endpoints
+    app.post(
+        "/api/history/record",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                if (!req.user) {
+                    return res
+                        .status(401)
+                        .json({ message: "Not authenticated" });
+                }
+                const { trackId } = req.body;
+                if (!trackId) {
+                    return res
+                        .status(400)
+                        .json({ message: "trackId is required" });
+                }
+                const history = await storage.recordPlay(
+                    (req.user as any).id,
+                    parseInt(trackId)
+                );
+                res.json(history);
+            } catch (error: any) {
+                res.status(500).json({
+                    message: "Failed to record play",
+                    error: error.message,
+                });
+            }
+        }
+    );
+
+    app.get(
+        "/api/history/replay",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                if (!req.user) {
+                    return res
+                        .status(401)
+                        .json({ message: "Not authenticated" });
+                }
+                const limit =
+                    parseInt((req.query.limit as string) || "10") || 10;
+                const history = await storage.getRecentPlays(
+                    (req.user as any).id,
+                    limit
+                );
+                res.json(history);
+            } catch (error: any) {
+                res.status(500).json({
+                    message: "Failed to get recent plays",
+                    error: error.message,
+                });
             }
         }
     );
@@ -772,14 +884,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (!user || (user as any).isGuest) {
                     return res
                         .status(403)
-                        .json({ message: "Login required to download from Spotify" });
+                        .json({
+                            message: "Login required to download from Spotify",
+                        });
                 }
                 const { url } = req.body || {};
                 if (
                     !url ||
-                    !/open\.spotify\.com\/(track|playlist|album|artist)\//.test(url)
+                    !/open\.spotify\.com\/(track|playlist|album|artist)\//.test(
+                        url
+                    )
                 ) {
-                    return res.status(400).json({ message: "Invalid Spotify URL" });
+                    return res
+                        .status(400)
+                        .json({ message: "Invalid Spotify URL" });
                 }
 
                 // kick off async download — progress emitted over websocket
@@ -792,7 +910,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 return res.status(202).json({ message: "Download started" });
             } catch (error) {
-                return res.status(500).json({ message: "Failed to start download" });
+                return res
+                    .status(500)
+                    .json({ message: "Failed to start download" });
             }
         }
     );
@@ -800,7 +920,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const httpServer = createServer(app);
     // Attach WebSocket server for real-time spotify download progress
     try {
-        const wss = new WebSocketServer({ server: httpServer, path: "/ws/spotify" });
+        const wss = new WebSocketServer({
+            server: httpServer,
+            path: "/ws/spotify",
+        });
 
         // Each connection may subscribe to a specific userId.
         (wss as any).on("connection", (ws: any, req: any) => {
@@ -819,7 +942,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const forward = (eventName: string) => (payload: any) => {
-            const msg = JSON.stringify({ event: "spotify-download-progress", data: payload });
+            const msg = JSON.stringify({
+                event: "spotify-download-progress",
+                data: payload,
+            });
             wss.clients.forEach((client: any) => {
                 try {
                     if (client && (client as any).readyState === 1) {
@@ -840,7 +966,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spotifyEmitter.on("error", forward("error"));
         spotifyEmitter.on("log", forward("log"));
     } catch (err) {
-        console.error("Failed to start WebSocket server for spotify downloads", err);
+        console.error(
+            "Failed to start WebSocket server for spotify downloads",
+            err
+        );
     }
     return httpServer;
 }

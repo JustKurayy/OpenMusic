@@ -50,6 +50,7 @@ export const playlists = pgTable("playlists", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Junction table for playlist-track relationships
 export const playlistTracks = pgTable("playlist_tracks", {
     id: serial("id").primaryKey(),
     playlistId: integer("playlist_id")
@@ -58,14 +59,38 @@ export const playlistTracks = pgTable("playlist_tracks", {
     trackId: integer("track_id")
         .references(() => tracks.id, { onDelete: "cascade" })
         .notNull(),
-    position: integer("position").notNull(),
+    position: integer("position").default(0).notNull(),
     addedAt: timestamp("added_at").defaultNow().notNull(),
+});
+
+// User listening history - tracks when users play tracks
+export const userListeningHistory = pgTable("user_listening_history", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+        .references(() => users.id, { onDelete: "cascade" })
+        .notNull(),
+    trackId: integer("track_id")
+        .references(() => tracks.id, { onDelete: "cascade" })
+        .notNull(),
+    playedAt: timestamp("played_at").defaultNow().notNull(),
+    playCount: integer("play_count").default(1).notNull(),
 });
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
     tracks: many(tracks),
     playlists: many(playlists),
+}));
+
+export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
+    playlist: one(playlists, {
+        fields: [playlistTracks.playlistId],
+        references: [playlists.id],
+    }),
+    track: one(tracks, {
+        fields: [playlistTracks.trackId],
+        references: [tracks.id],
+    }),
 }));
 
 export const tracksRelations = relations(tracks, ({ one, many }) => ({
@@ -84,16 +109,19 @@ export const playlistsRelations = relations(playlists, ({ one, many }) => ({
     playlistTracks: many(playlistTracks),
 }));
 
-export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
-    playlist: one(playlists, {
-        fields: [playlistTracks.playlistId],
-        references: [playlists.id],
-    }),
-    track: one(tracks, {
-        fields: [playlistTracks.trackId],
-        references: [tracks.id],
-    }),
-}));
+export const userListeningHistoryRelations = relations(
+    userListeningHistory,
+    ({ one }) => ({
+        user: one(users, {
+            fields: [userListeningHistory.userId],
+            references: [users.id],
+        }),
+        track: one(tracks, {
+            fields: [userListeningHistory.trackId],
+            references: [tracks.id],
+        }),
+    })
+);
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -107,15 +135,13 @@ export const insertTrackSchema = createInsertSchema(tracks).omit({
     createdAt: true,
 });
 
-export const updateTrackSchema = insertTrackSchema
-    .partial()
-    .omit({
-        duration: true,
-        filename: true,
-        filePath: true,
-        mimeType: true,
-        fileSize: true,
-    });
+export const updateTrackSchema = insertTrackSchema.partial().omit({
+    duration: true,
+    filename: true,
+    filePath: true,
+    mimeType: true,
+    fileSize: true,
+});
 
 export const insertPlaylistSchema = createInsertSchema(playlists).omit({
     id: true,
@@ -131,6 +157,13 @@ export const insertPlaylistTrackSchema = createInsertSchema(
     addedAt: true,
 });
 
+export const insertUserListeningHistorySchema = createInsertSchema(
+    userListeningHistory
+).omit({
+    id: true,
+    playedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -143,6 +176,11 @@ export type InsertPlaylist = z.infer<typeof insertPlaylistSchema>;
 
 export type PlaylistTrack = typeof playlistTracks.$inferSelect;
 export type InsertPlaylistTrack = z.infer<typeof insertPlaylistTrackSchema>;
+
+export type UserListeningHistory = typeof userListeningHistory.$inferSelect;
+export type InsertUserListeningHistory = z.infer<
+    typeof insertUserListeningHistorySchema
+>;
 
 // Extended types for API responses
 export type TrackWithUser = Track & { user: User };

@@ -3,6 +3,7 @@ import {
     tracks,
     playlists,
     playlistTracks,
+    userListeningHistory,
     type User,
     type InsertUser,
     type Track,
@@ -14,6 +15,8 @@ import {
     type PlaylistWithUser,
     type PlaylistTrack,
     type InsertPlaylistTrack,
+    type UserListeningHistory,
+    type InsertUserListeningHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, asc } from "drizzle-orm";
@@ -31,7 +34,11 @@ export interface IStorage {
     getTracksByUser(userId: number): Promise<TrackWithUser[]>;
     getAllTracks(): Promise<TrackWithUser[]>;
     createTrack(track: InsertTrack & { userId: number }): Promise<Track>;
-    updateTrack(id: number, track: Partial<InsertTrack>, userId: number): Promise<Track | undefined>;
+    updateTrack(
+        id: number,
+        track: Partial<InsertTrack>,
+        userId: number
+    ): Promise<Track | undefined>;
     deleteTrack(id: number, userId: number): Promise<boolean>;
     searchTracks(query: string, userId?: number): Promise<TrackWithUser[]>;
 
@@ -52,6 +59,18 @@ export interface IStorage {
     addTrackToPlaylist(
         playlistTrack: InsertPlaylistTrack
     ): Promise<PlaylistTrack>;
+
+    // User listening history
+    recordPlay(userId: number, trackId: number): Promise<UserListeningHistory>;
+    getRecentPlays(
+        userId: number,
+        limit?: number
+    ): Promise<UserListeningHistory[]>;
+    getPlayCount(userId: number, trackId: number): Promise<number>;
+    incrementPlayCount(
+        userId: number,
+        trackId: number
+    ): Promise<UserListeningHistory>;
     removeTrackFromPlaylist(
         playlistId: number,
         trackId: number,
@@ -382,6 +401,82 @@ export class DatabaseStorage implements IStorage {
         }
 
         return true;
+    }
+
+    // User listening history
+    async recordPlay(
+        userId: number,
+        trackId: number
+    ): Promise<UserListeningHistory> {
+        const [history] = await db
+            .insert(userListeningHistory)
+            .values({ userId, trackId, playCount: 1 })
+            .returning();
+        return history;
+    }
+
+    async getRecentPlays(
+        userId: number,
+        limit = 10
+    ): Promise<UserListeningHistory[]> {
+        const result = await db
+            .select()
+            .from(userListeningHistory)
+            .where(eq(userListeningHistory.userId, userId))
+            .orderBy(desc(userListeningHistory.playedAt))
+            .limit(limit);
+        return result;
+    }
+
+    async getPlayCount(userId: number, trackId: number): Promise<number> {
+        const [history] = await db
+            .select()
+            .from(userListeningHistory)
+            .where(
+                and(
+                    eq(userListeningHistory.userId, userId),
+                    eq(userListeningHistory.trackId, trackId)
+                )
+            );
+        return history?.playCount || 0;
+    }
+
+    async incrementPlayCount(
+        userId: number,
+        trackId: number
+    ): Promise<UserListeningHistory> {
+        const [existingHistory] = await db
+            .select()
+            .from(userListeningHistory)
+            .where(
+                and(
+                    eq(userListeningHistory.userId, userId),
+                    eq(userListeningHistory.trackId, trackId)
+                )
+            );
+
+        if (existingHistory) {
+            const [updatedHistory] = await db
+                .update(userListeningHistory)
+                .set({
+                    playCount: existingHistory.playCount + 1,
+                    playedAt: new Date(),
+                })
+                .where(
+                    and(
+                        eq(userListeningHistory.userId, userId),
+                        eq(userListeningHistory.trackId, trackId)
+                    )
+                )
+                .returning();
+            return updatedHistory || existingHistory;
+        }
+
+        const [newHistory] = await db
+            .insert(userListeningHistory)
+            .values({ userId, trackId, playCount: 1 })
+            .returning();
+        return newHistory;
     }
 }
 

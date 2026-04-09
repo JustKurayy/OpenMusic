@@ -1,7 +1,9 @@
-import { Clock, MoreHorizontal, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, MoreHorizontal, Play, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayer } from "@/contexts/PlayerContext";
-import { tracksApi, type ApiTrack } from "@/lib/api";
+import { tracksApi, type ApiTrack, likesApi } from "@/lib/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
 interface TrackListProps {
@@ -10,6 +12,8 @@ interface TrackListProps {
     showAlbum?: boolean;
     showDateAdded?: boolean;
     onEditTrack?: (track: ApiTrack) => void;
+    onLike?: (trackId: number) => void;
+    onUnlike?: (trackId: number) => void;
     containerId?: string;
 }
 
@@ -39,9 +43,28 @@ export default function TrackList({
     showAlbum = true,
     showDateAdded = true,
     onEditTrack,
+    onLike,
+    onUnlike,
     containerId,
 }: TrackListProps) {
     const { playTrack, currentTrack } = usePlayer();
+
+    const checkIfLiked = async (trackId: number): Promise<boolean> => {
+        try {
+            const result = await likesApi.isLiked(trackId);
+            return result.liked;
+        } catch {
+            return false;
+        }
+    };
+
+    const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const trackIds = tracks.map((t) => t.id);
+        const likedSet = new Set<number>(trackIds);
+        setLikedTracks(likedSet);
+    }, [tracks]);
 
     const handlePlayTrack = (track: ApiTrack) => {
         playTrack(track, tracks);
@@ -115,19 +138,45 @@ export default function TrackList({
                         <span className="text-xs text-spotify-text ml-auto">
                             {formatTime(track.duration)}
                         </span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onEditTrack) {
-                                    onEditTrack(track);
-                                }
-                            }}
-                        >
-                            <MoreHorizontal className="w-4 h-4" />
-                        </Button>
+                        {onLike && onUnlike ? (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const isLiked = likedTracks.has(track.id);
+                                    if (isLiked) {
+                                        onUnlike(track.id);
+                                    } else {
+                                        onLike(track.id);
+                                    }
+                                }}
+                            >
+                                <Heart
+                                    className="w-4 h-4"
+                                    style={{
+                                        color: likedTracks.has(track.id)
+                                            ? "rgba(124, 58, 237, 1)"
+                                            : "currentColor",
+                                    }}
+                                />
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 hover:text-spotify-white transition-all duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onEditTrack) {
+                                        onEditTrack(track);
+                                    }
+                                }}
+                            >
+                                <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                        )}
                     </motion.li>
                 );
             })}

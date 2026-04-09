@@ -76,6 +76,18 @@ export const userListeningHistory = pgTable("user_listening_history", {
     playCount: integer("play_count").default(1).notNull(),
 });
 
+// User likes - tracks when users "like" songs
+export const userLikes = pgTable("user_likes", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+        .references(() => users.id, { onDelete: "cascade" })
+        .notNull(),
+    trackId: integer("track_id")
+        .references(() => tracks.id, { onDelete: "cascade" })
+        .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
     tracks: many(tracks),
@@ -123,6 +135,17 @@ export const userListeningHistoryRelations = relations(
     })
 );
 
+export const userLikesRelations = relations(userLikes, ({ one }) => ({
+    user: one(users, {
+        fields: [userLikes.userId],
+        references: [users.id],
+    }),
+    track: one(tracks, {
+        fields: [userLikes.trackId],
+        references: [tracks.id],
+    }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
     id: true,
@@ -164,6 +187,11 @@ export const insertUserListeningHistorySchema = createInsertSchema(
     playedAt: true,
 });
 
+export const insertUserLikeSchema = createInsertSchema(userLikes).omit({
+    id: true,
+    createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -182,6 +210,9 @@ export type InsertUserListeningHistory = z.infer<
     typeof insertUserListeningHistorySchema
 >;
 
+export type UserLike = typeof userLikes.$inferSelect;
+export type InsertUserLike = z.infer<typeof insertUserLikeSchema>;
+
 // Extended types for API responses
 export type TrackWithUser = Track & { user: User };
 export type PlaylistWithTracks = Playlist & {
@@ -189,3 +220,4 @@ export type PlaylistWithTracks = Playlist & {
     trackCount: number;
 };
 export type PlaylistWithUser = Playlist & { user: User };
+export type UserLikeWithTrack = UserLike & { track: TrackWithUser };

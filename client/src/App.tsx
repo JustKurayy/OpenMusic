@@ -17,6 +17,7 @@ import SearchPage from "@/pages/Search";
 import CreatePlaylist from "@/pages/CreatePlaylist";
 import Radio from "@/pages/Radio";
 import Album from "@/pages/Album";
+import Likes from "@/pages/Likes";
 
 // Update queryClient to include auth header
 queryClient.setDefaultOptions({
@@ -74,6 +75,7 @@ function AppContent() {
                     <Route path="/search" component={SearchPage} />
                     <Route path="/create-playlist" component={CreatePlaylist} />
                     <Route path="/album/:albumName" component={Album} />
+                    <Route path="/likes" component={Likes} />
                     <Route component={NotFound} />
                 </Switch>
             </div>

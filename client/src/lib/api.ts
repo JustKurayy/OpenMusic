@@ -157,6 +157,19 @@ export const historyApi = {
         apiRequest("GET", `/api/history/replay?limit=${limit}`),
 };
 
+// User Likes API
+export const likesApi = {
+    add: (trackId: number) => apiRequest("POST", "/api/likes/add", { trackId }),
+
+    remove: (trackId: number) =>
+        apiRequest("DELETE", "/api/likes/remove", { trackId }),
+
+    isLiked: (trackId: number) =>
+        apiRequest("GET", `/api/likes/is-liked?trackId=${trackId}`),
+
+    getUserLikes: () => apiRequest("GET", "/api/likes/user"),
+};
+
 // Spotify Download API
 export const spotifyApi = {
     download: (url: string) =>

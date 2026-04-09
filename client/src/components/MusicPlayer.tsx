@@ -1,4 +1,5 @@
-import { tracksApi } from "@/lib/api";
+import { tracksApi, likesApi } from "@/lib/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { usePlayer } from "@/contexts/PlayerContext";
 import {
     Heart,
@@ -11,7 +12,7 @@ import {
     Volume1,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 // --- Custom Spotify-style SVGs ---
 const PlayIcon = () => (
@@ -78,7 +79,6 @@ function PlayerSlider({
 
     return (
         <div className="group relative w-full flex items-center h-4 cursor-pointer">
-            {/* The actual hidden input for functionality */}
             <input
                 type="range"
                 min="0"
@@ -88,22 +88,15 @@ function PlayerSlider({
                 onChange={(e) => onChange(Number(e.target.value))}
                 className="absolute w-full h-full opacity-0 z-20 cursor-pointer disabled:cursor-not-allowed"
             />
-
-            {/* Visual Track Background */}
             <div className="absolute w-full h-[4px] bg-[#4d4d4d] rounded-full overflow-hidden">
-                {/* Visual Progress Bar */}
                 <div
                     className="h-full bg-white group-hover:bg-[#1db954] transition-colors duration-150"
                     style={{ width: `${percentage}%` }}
                 />
             </div>
-
-            {/* Visual Thumb - Small circle that appears on hover */}
             <div
                 className="absolute h-3 w-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10 pointer-events-none"
-                style={{
-                    left: `calc(${percentage}% - 6px)`,
-                }}
+                style={{ left: `calc(${percentage}% - 6px)` }}
             />
         </div>
     );
@@ -140,10 +133,9 @@ export default function MusicPlayer({
         setRepeatMode,
     } = usePlayer();
 
-    const [isLiked, setIsLiked] = useState(false);
     const [isShuffled, setIsShuffled] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
-    const [prevVolume, setPrevVolume] = useState(volume);
+    const [prevVolume, setPrevVolume] = useState(0);
 
     const isRadio = !!currentRadio;
     const VolumeIcon =
@@ -157,6 +149,47 @@ export default function MusicPlayer({
             setPrevVolume(volume);
             setVolume(0);
             setIsMuted(true);
+        }
+    };
+
+    // --- Like functionality ---
+    const { data: likeResult, isLoading: isLiking } = useQuery({
+        queryKey: ["isLiked", currentTrack?.id],
+        queryFn: () => likesApi.isLiked(currentTrack?.id || 0),
+        enabled: !!currentTrack,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const addLikeMutation = useMutation({
+        mutationFn: () => likesApi.add(currentTrack?.id || 0),
+        onSuccess: (data) => {
+            if (data.ok) {
+                // Success - the track is now liked
+            }
+        },
+        onError: (error) => {
+            console.error("Failed to add like:", error);
+        },
+    });
+
+    const removeLikeMutation = useMutation({
+        mutationFn: () => likesApi.remove(currentTrack?.id || 0),
+        onSuccess: (data) => {
+            if (data.ok) {
+                // Success - the track is now unliked
+            }
+        },
+        onError: (error) => {
+            console.error("Failed to remove like:", error);
+        },
+    });
+
+    const handleToggleLike = () => {
+        if (!currentTrack) return;
+        if (likeResult?.ok && !likeResult?.ok) {
+            removeLikeMutation.mutate();
+        } else if (!isLiking) {
+            addLikeMutation.mutate();
         }
     };
 
@@ -196,15 +229,14 @@ export default function MusicPlayer({
     return (
         <footer className="px-4 py-3 h-24 flex items-center">
             <div className="flex items-center justify-between w-full">
-                {/* Left: Metadata */}
                 <div className="flex items-center space-x-4 flex-1 min-w-0 max-w-sm">
                     <img
                         src={
                             isRadio
                                 ? currentRadio.favicon
                                 : currentTrack?.coverArt
-                                  ? tracksApi.getArtworkUrl(currentTrack.id)
-                                  : ""
+                                    ? tracksApi.getArtworkUrl(currentTrack.id)
+                                    : ""
                         }
                         alt="Cover"
                         className="w-14 h-14 rounded-md object-cover shadow-2xl"
@@ -222,21 +254,22 @@ export default function MusicPlayer({
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setIsLiked(!isLiked)}
-                        className={`hover:bg-transparent ${isLiked ? "text-[#1db954]" : "text-[#b3b3b3] hover:text-white"}`}
+                        disabled={isLiking || !currentTrack}
+                        onClick={handleToggleLike}
+                        className={`hover:bg-transparent ${likeResult?.ok ? "text-[#1db954]" : "text-[#b3b3b3] hover:text-white"}`}
                     >
                         <Heart
-                            className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
+                            className={`w-4 h-4 ${likeResult?.ok ? "fill-current" : ""}`}
                         />
                     </Button>
                 </div>
 
-                {/* Center: Playback Controls */}
                 <div className="flex flex-col items-center space-y-2 flex-1 max-w-2xl">
                     <div className="flex items-center space-x-6">
                         <Button
                             variant="ghost"
                             size="sm"
+                            disabled={isLiking || !currentTrack}
                             onClick={() => setIsShuffled(!isShuffled)}
                             className={`hover:bg-transparent ${isShuffled ? "text-[#1db954]" : "text-[#b3b3b3] hover:text-white"}`}
                         >
@@ -247,6 +280,7 @@ export default function MusicPlayer({
                         <Button
                             variant="ghost"
                             size="sm"
+                            disabled={isLiking || !currentTrack}
                             className="text-[#b3b3b3] hover:text-white hover:bg-transparent"
                             onClick={previous}
                         >
@@ -266,6 +300,7 @@ export default function MusicPlayer({
                         <Button
                             variant="ghost"
                             size="sm"
+                            disabled={isLiking || !currentTrack}
                             className="text-[#b3b3b3] hover:text-white hover:bg-transparent"
                             onClick={next}
                         >
@@ -274,9 +309,10 @@ export default function MusicPlayer({
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                                setRepeatMode((prev) => (prev + 1) % 3)
-                            }
+                            disabled={isLiking || !currentTrack}
+                            onClick={(e) => {
+                                setRepeatMode(0);
+                            }}
                             className={`hover:bg-transparent ${repeatMode > 0 ? "text-[#1db954]" : "text-[#b3b3b3] hover:text-white"}`}
                         >
                             <Repeat
@@ -285,7 +321,6 @@ export default function MusicPlayer({
                         </Button>
                     </div>
 
-                    {/* Progress Bar Container */}
                     <div className="flex items-center space-x-2 w-full max-w-md">
                         <span className="text-[11px] text-[#b3b3b3] min-w-[35px] text-right tabular-nums">
                             {formatTime(currentTime)}
@@ -301,11 +336,11 @@ export default function MusicPlayer({
                     </div>
                 </div>
 
-                {/* Right: Utility Controls */}
                 <div className="flex items-center space-x-3 flex-1 justify-end max-w-sm">
                     <Button
                         variant="ghost"
                         size="sm"
+                        disabled={isLiking || !currentTrack}
                         onClick={toggleLyrics}
                         className={`hover:bg-transparent ${showLyrics ? "text-[#1db954]" : "text-[#b3b3b3] hover:text-white"}`}
                     >
@@ -314,6 +349,7 @@ export default function MusicPlayer({
                     <Button
                         variant="ghost"
                         size="sm"
+                        disabled={isLiking || !currentTrack}
                         className="text-[#b3b3b3] hover:text-white hover:bg-transparent"
                         onClick={onToggleQueue}
                     >
@@ -323,6 +359,7 @@ export default function MusicPlayer({
                         <Button
                             variant="ghost"
                             size="sm"
+                            disabled={isLiking || !currentTrack}
                             onClick={toggleMute}
                             className="text-[#b3b3b3] hover:text-white hover:bg-transparent p-0"
                         >

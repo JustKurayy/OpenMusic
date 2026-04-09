@@ -741,6 +741,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
     );
 
+    // User likes API endpoints
+    app.post("/api/likes/add", authenticateUserOrGuest, async (req, res) => {
+        try {
+            if (!req.user) {
+                return res.status(401).json({ message: "Not authenticated" });
+            }
+            const { trackId } = req.body;
+            if (!trackId) {
+                return res.status(400).json({ message: "trackId is required" });
+            }
+            const like = await storage.addLike(
+                (req.user as any).id,
+                parseInt(trackId)
+            );
+            res.status(201).json(like);
+        } catch (error: any) {
+            res.status(400).json({
+                message: "Failed to add like",
+                error: error.message,
+            });
+        }
+    });
+
+    app.delete(
+        "/api/likes/remove",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                if (!req.user) {
+                    return res
+                        .status(401)
+                        .json({ message: "Not authenticated" });
+                }
+                const { trackId } = req.body;
+                if (!trackId) {
+                    return res
+                        .status(400)
+                        .json({ message: "trackId is required" });
+                }
+                const removed = await storage.removeLike(
+                    (req.user as any).id,
+                    parseInt(trackId)
+                );
+                res.json({ removed });
+            } catch (error) {
+                console.error("[API /api/likes/remove] Error:", error);
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
+    );
+
+    app.get(
+        "/api/likes/is-liked",
+        authenticateUserOrGuest,
+        async (req, res) => {
+            try {
+                if (!req.user) {
+                    return res
+                        .status(401)
+                        .json({ message: "Not authenticated" });
+                }
+                const { trackId } = req.query;
+                if (!trackId) {
+                    return res
+                        .status(400)
+                        .json({ message: "trackId is required" });
+                }
+                const liked = await storage.isLiked(
+                    (req.user as any).id,
+                    parseInt(trackId as string)
+                );
+                res.json({ liked });
+            } catch (error) {
+                console.error("[API /api/likes/is-liked] Error:", error);
+                res.status(500).json({
+                    message: "Server error",
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
+    );
+
+    app.get("/api/likes/user", authenticateUserOrGuest, async (req, res) => {
+        try {
+            if (!req.user) {
+                return res.status(401).json({ message: "Not authenticated" });
+            }
+            const likes = await storage.getUserLikes((req.user as any).id);
+            res.json(likes);
+        } catch (error) {
+            console.error("[API /api/likes/user] Error:", error);
+            res.status(500).json({
+                message: "Server error",
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    });
+
     // History API endpoints
     app.post(
         "/api/history/record",
@@ -882,11 +985,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
                 const user = req.user as any;
                 if (!user || (user as any).isGuest) {
-                    return res
-                        .status(403)
-                        .json({
-                            message: "Login required to download from Spotify",
-                        });
+                    return res.status(403).json({
+                        message: "Login required to download from Spotify",
+                    });
                 }
                 const { url } = req.body || {};
                 if (

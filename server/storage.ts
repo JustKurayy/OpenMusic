@@ -4,6 +4,7 @@ import {
     playlists,
     playlistTracks,
     userListeningHistory,
+    userLikes,
     type User,
     type InsertUser,
     type Track,
@@ -17,6 +18,9 @@ import {
     type InsertPlaylistTrack,
     type UserListeningHistory,
     type InsertUserListeningHistory,
+    type UserLike,
+    type InsertUserLike,
+    type UserLikeWithTrack,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, asc } from "drizzle-orm";
@@ -59,6 +63,12 @@ export interface IStorage {
     addTrackToPlaylist(
         playlistTrack: InsertPlaylistTrack
     ): Promise<PlaylistTrack>;
+
+    // User likes
+    addLike(userId: number, trackId: number): Promise<UserLike>;
+    removeLike(userId: number, trackId: number): Promise<boolean>;
+    isLiked(userId: number, trackId: number): Promise<boolean>;
+    getUserLikes(userId: number): Promise<UserLikeWithTrack[]>;
 
     // User listening history
     recordPlay(userId: number, trackId: number): Promise<UserListeningHistory>;
@@ -477,6 +487,67 @@ export class DatabaseStorage implements IStorage {
             .values({ userId, trackId, playCount: 1 })
             .returning();
         return newHistory;
+    }
+
+    // User likes
+    async addLike(userId: number, trackId: number): Promise<UserLike> {
+        const [newLike] = await db
+            .insert(userLikes)
+            .values({ userId, trackId })
+            .returning();
+        return newLike;
+    }
+
+    async removeLike(userId: number, trackId: number): Promise<boolean> {
+        const result = await db
+            .delete(userLikes)
+            .where(
+                and(
+                    eq(userLikes.userId, userId),
+                    eq(userLikes.trackId, trackId)
+                )
+            );
+        return result.rowCount! > 0;
+    }
+
+    async isLiked(userId: number, trackId: number): Promise<boolean> {
+        const [like] = await db
+            .select()
+            .from(userLikes)
+            .where(
+                and(
+                    eq(userLikes.userId, userId),
+                    eq(userLikes.trackId, trackId)
+                )
+            );
+        return !!like;
+    }
+
+    async getUserLikes(userId: number): Promise<UserLikeWithTrack[]> {
+        const likeTracksRaw = await db
+            .select({
+                id: userLikes.id,
+                userId: userLikes.userId,
+                trackId: userLikes.trackId,
+                createdAt: userLikes.createdAt,
+                track: tracks,
+                user: users,
+            })
+            .from(userLikes)
+            .innerJoin(tracks, eq(userLikes.trackId, tracks.id))
+            .innerJoin(users, eq(tracks.userId, users.id))
+            .where(eq(userLikes.userId, userId))
+            .orderBy(desc(userLikes.createdAt));
+
+        const likeTracksData = likeTracksRaw.map((row) => ({
+            ...row,
+            track: {
+                ...row.track,
+                user: row.user,
+            },
+        }));
+
+        return likeTracksData;
     }
 }
 
